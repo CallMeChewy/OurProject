@@ -1,0 +1,21 @@
+{
+  "name": "ourlibrary-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo for OurLibrary project",
+  "private": true,
+  "workspaces": [
+    "app",
+    "core",
+    "scripts"
+  ],
+  "scripts": {
+    "start": "npm start --workspace=app",
+    "build": "npm run build --workspace=app",
+    "test": "node --test core/tests/*.test.js",
+    "manage-tokens": "npm run manage-tokens --workspace=scripts",
+    "package-release": "npm run package-release --workspace=scripts"
+  },
+  "devDependencies": {
+    "lerna": "^8.1.2"
+  }
+}

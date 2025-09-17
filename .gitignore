@@ -1,0 +1,121 @@
+# File: .gitignore
+# Path: /home/herb/Desktop/AndyWeb/.gitignore
+# Standard: AIDEV-PascalCase-2.1
+# Created: 2025-07-04
+# Last Modified: 2025-07-25 01:30PM
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# BowersWorld.com Specific
+Data/Local/*.db
+Data/Local/*.db-*
+Data/Cache/
+Data/Backups/
+Logs/
+*.log
+
+# Sensitive Configuration
+Config/Production/secrets.json
+Config/Production/api_keys.json
+.env
+.env.local
+.env.production
+
+# Large Files
+## Assets/Books/
+## Assets/Covers/
+## Assets/Thumbs/
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS Generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Coverage Reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Testing
+.pytest_cache/
+.tox/
+
+# Documentation builds
+docs/_build/
+docs/build/
+
+# Project-specific exclusions
+anderson-library-service-key.json
+config/*.json
+config/**/*.json
+!config/manifest.local.json
+!config/templates/*.example.json
+secrets/
+app/dist/
+
+# Directories to ignore
+node_modules/
+**/Books/*
+**/Covers/*
+**/Thumbs/*
+
+# Organization folders - keep structure but ignore temp content
+Archive/TempFiles/*
+!Archive/TempFiles/.gitkeep
+Development/temp/
+Documentation/drafts/
+
+dist/
+dist_V1/
+*.log
+.DS_Store
+!config/templates/*.example.json
+
+# Special exclusion for directories starting with '..'
+..*

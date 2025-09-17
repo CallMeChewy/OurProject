@@ -1,0 +1,470 @@
+File: Design Standard v2.5.md
+Path: Docs/Standards/Design Standard v2.5.md
+Standard: AIDEV-PascalCase-2.5
+Created: 2025-09-11
+Last Modified: 2025-09-11 07:22PM
+
+""" Description: Design Standard v2.5 - Consolidated AI Assistant Guidance Framework Complete consolidation of all design standards from v1.8 through v2.4 Optimized format for AI assistant compliance and guidance """
+
+Design Standard v2.5 - Consolidated AI Assistant Guidance Framework
+
+Author & Project
+
+Author: Herb Bowers  
+Project: Project Himalaya  
+Contact: [HimalayaProject1@gmail.com](mailto:HimalayaProject1@gmail.com)  
+Evolution: v1.8 → v1.8a → v1.9 → v2.0 → v2.1 → v2.2 → v2.3 → v2.4 → v2.5
+
+🚨 MANDATORY AI SESSION START PROTOCOL
+
+ EVERY AI SESSION MUST BEGIN WITH THIS EXACT ACKNOWLEDGMENT:
+
+    🚨 DESIGN STANDARD v2.5 COMPLIANCE ACKNOWLEDGED 🚨
+    
+    I commit to the following NON-NEGOTIABLE requirements:
+    ✅ Search project knowledge for Design Standard v2.5 BEFORE any coding
+    ✅ Use ACTUAL CURRENT TIME in ALL headers (never placeholder times)
+    ✅ Create unique progressive timestamps for each file
+    ✅ Use relative paths from project base (no absolute paths)
+    ✅ Assume ALL scripts may be symlinked - use defensive patterns
+    ✅ NO credentials in any code or build artifacts
+    ✅ Verify ecosystem requirements before applying naming conventions
+    ✅ Update Last Modified timestamp on every file change
+    ✅ Complete pre-code verification checklist before creating files
+    
+    VIOLATION = IMMEDIATE SESSION RESTART
+    CREDENTIAL LEAK = PROJECT TERMINATION RISK
+    
+
+📋 MANDATORY PRE-CODE VERIFICATION CHECKLIST
+
+
+ BEFORE CREATING/MODIFYING ANY FILE:
+
+    🔍 PRE-CODE VERIFICATION CHECKLIST:
+    □ Current date/time determined: [YYYY-MM-DD HH:MMPM]
+    □ Target file path confirmed: [ProjectBase/Path/FileName.ext]
+    □ Path is relative to project base: [Confirmed/Not Confirmed]
+    □ Ecosystem requirements researched: [Framework/Tool requirements]
+    □ Naming convention determined: [PascalCase/ecosystem exception]
+    □ Symlink pattern chosen: [PROJECTTOOL/STANDALONE/ADAPTIVE]
+    □ Security scan completed: [No credentials in code]
+    □ Header will use unique timestamp: [Not copied from previous files]
+    
+    PROCEEDING WITH FILE CREATION/MODIFICATION
+    
+
+📄 UNIVERSAL HEADER REQUIREMENTS
+
+
+ ALL FILES MUST INCLUDE STANDARDIZED HEADERS
+
+ Python Files (.py)
+     File: FileName.py
+     Path: ProjectName/relative/path/FileName.py
+     Standard: AIDEV-PascalCase-2.5
+     Created: YYYY-MM-DD
+     Last Modified: YYYY-MM-DD  HH:MM[AM|PM]  ← MUST BE ACTUAL CURRENT TIME
+     Symlink Pattern: [PROJECTTOOL|STANDALONE|ADAPTIVE]
+    """
+    Description: Specific purpose and functionality description
+    Extended details as needed.
+    """
+    
+
+ HTML Files (.html)
+    <!-- 
+    File: filename.html
+    Path: ProjectName/relative/path/filename.html
+    Standard: AIDEV-PascalCase-2.5
+    Ecosystem Requirement: [Reason for specific casing]
+    Created: YYYY-MM-DD
+    Last Modified: YYYY-MM-DD  HH:MM[AM|PM]
+    Description: Specific page/component description
+    -->
+    
+
+ CSS Files (.css)
+    /
+    File: filename.css
+    Path: ProjectName/relative/path/filename.css
+    Standard: AIDEV-PascalCase-2.5
+    Framework Requirement: [Framework name and casing requirement]
+    Created: YYYY-MM-DD
+    Last Modified: YYYY-MM-DD  HH:MM[AM|PM]
+    Description: Specific stylesheet description
+    /
+    
+
+ JavaScript Files (.js)
+    // File: filename.js
+    // Path: ProjectName/relative/path/filename.js
+    // Standard: AIDEV-PascalCase-2.5
+    // Framework Requirement: [Framework name and conventions]
+    // Created: YYYY-MM-DD
+    // Last Modified: YYYY-MM-DD  HH:MM[AM|PM]
+    /
+      Description: Specific script/module description
+     /
+    
+
+ Configuration Files (.json, .yml, etc.)
+    {
+      "header": {
+        "file": "filename.json",
+        "path": "ProjectName/relative/path/filename.json",
+        "standard": "AIDEV-PascalCase-2.5",
+        "ecosystemrequirement": "npm requires exact filename",
+        "created": "YYYY-MM-DD",
+        "lastmodified": "YYYY-MM-DD HH:MMAM",
+        "description": "Specific configuration purpose"
+      }
+    }
+    
+
+ CRITICAL HEADER VALIDATION RULES:
+
+1.  Timestamp Authenticity: Each file gets unique current timestamp
+2.  Path Relativity: All paths relative to project base (no absolute paths)
+3.  Ecosystem Documentation: Explain any non-PascalCase naming
+4.  Symlink Pattern: Declare how script handles symlink execution
+5.  Description Specificity: Specific purpose, not generic descriptions
+
+
+🎯 NAMING CONVENTIONS & ECOSYSTEM COMPATIBILITY
+
+ PRIMARY RULE: COMPATIBILITY FIRST, CONSISTENCY SECOND
+
+ Python Backend (PascalCase Always)
+
+     Files & Directories
+    BookService.py, DatabaseManager.py, FilterPanel.py
+    Source/, Assets/, Tests/, Scripts/
+    
+     Code Elements
+    class BookService:
+        def GetCategories(self) -> List[CategoryRecord]:
+            BookTitle = record.BookTitle
+            return self.DatabaseManager.GetBooks()
+    
+
+ Web Frontend (Ecosystem Requirements Override)
+
+     Required by ecosystem (MUST use exact casing)
+    package.json            npm requirement
+    nodemodules/           npm requirement
+    index.html              web server convention
+    src/                    build tool convention
+    public/                 static serving convention
+    .gitignore              git requirement
+    robots.txt              SEO requirement
+    
+     Framework-specific requirements
+    React: <ComponentName />       PascalCase components
+    Vue: <component-name>          kebab-case in templates
+    Angular: selector: 'app-root'  kebab-case selectors
+    CSS: .container-fluid          kebab-case classes
+    REST: /api/book-categories     kebab-case paths
+    
+
+ Exception Documentation Pattern
+
+     File: api-service.js
+     Framework Requirement: JavaScript module bundler expects kebab-case
+     Function Naming: camelCase per JavaScript ecosystem standards
+     Class Naming: PascalCase per JavaScript ecosystem standards
+  
+
+🛡️ SYMLINK-AWARE DEVELOPMENT PATTERNS
+
+ UNIVERSAL ASSUMPTION: ALL SCRIPTS MAY BE SYMLINKED
+
+ Pattern A: Project Tools (99% of scripts)
+
+    !/usr/bin/env python3
+     Symlink Pattern: PROJECTTOOL
+    
+    import os
+    import sys
+    from pathlib import Path
+    
+    def getexecutioncontext():
+        """Symlink-aware context detection"""
+        return {
+            'workingdirectory': os.getcwd(),
+            'projectname': os.path.basename(os.getcwd()),
+            'scriptpath': sys.argv[0],
+            'issymlinked': Path(sys.argv[0]).issymlink() if Path(sys.argv[0]).exists() else False
+        }
+    
+    def main():
+        """Work in current directory context (Reality, not Memorex)"""
+         CRITICAL: Use current working directory, not script location
+        projectname = os.path.basename(os.getcwd())
+    
+         Validate project environment
+        if not os.path.exists('.git'):
+            print(f"❌ Error: Not in a git repository")
+            print(f"   Current directory: {os.getcwd()}")
+            return False
+    
+        print(f"✅ Operating on project: {projectname}")
+         ... rest of script logic
+    
+        return True
+    
+
+ Pattern B: Self-Contained Utilities (rare)
+
+     Symlink Pattern: STANDALONE
+    
+    def standalonemain():
+        """Work from script location (Memorex)"""
+        scriptdir = Path(file).parent.resolve()
+        originalcwd = os.getcwd()
+    
+        try:
+            os.chdir(scriptdir)
+            return performstandaloneoperation()
+        finally:
+            os.chdir(originalcwd)   Always restore
+    
+
+ Pattern C: Adaptive Scripts (advanced)
+
+     Symlink Pattern: ADAPTIVE
+    
+    def adaptivemain():
+        """Detect context and adapt behavior"""
+        scriptpath = Path(sys.argv[0])
+    
+        if scriptpath.issymlink():
+            return projecttoolbehavior()   Work in current context
+        else:
+            if os.path.exists('.git'):
+                return projecttoolbehavior()
+            else:
+                return standaloneutilitybehavior()
+    
+
+ MEMOREX vs REALITY PRINCIPLE
+
+> "Build for Reality (current context), not Memorex (script location). When in doubt, work where you were invoked."
+
+  
+🔒 DISTRIBUTION SECURITY PROTOCOLS
+
+ UNIVERSAL PRINCIPLE: ALL BUILDS ARE DISTRIBUTION BUILDS
+
+ Pre-Build Security Audit (MANDATORY)
+
+    DISTRIBUTION SECURITY CHECKLIST:
+    □ NO production API keys in any files
+    □ NO OAuth credentials (clientid, clientsecret) in codebase
+    □ NO database passwords or connection strings
+    □ NO service account keys or certificates
+    □ NO authentication tokens or session keys
+    □ NO third-party service API keys
+    □ NO encryption keys or certificates
+    □ NO deployment credentials
+    
+
+ Secure Configuration Patterns
+
+    // ✅ CORRECT: Environment-based configuration
+    {
+      "appname": "OurLibrary",
+      "version": "1.0.0",
+      "databasetype": "sqlite",
+      "authprovider": "googleoauth",
+      "features": {
+        "offlinemode": true
+      }
+    }
+    
+
+    // ✅ CORRECT: Runtime credential loading
+    function loadCredentials() {
+        return {
+            clientId: process.env.GOOGLECLIENTID || 'development-only-id',
+            apiEndpoint: process.env.APIENDPOINT || 'https://api.example.com'
+        };
+    }
+    
+
+ Automated Security Scanning
+
+     REQUIRED: Before every build
+    function scanforcredentials() {
+        echo "🔍 Scanning for credential patterns..."
+        grep -r "clientsecret" --exclude-dir=nodemodules .
+        grep -r "apikey" --exclude-dir=nodemodules .
+        grep -r "password" --exclude-dir=nodemodules .
+        echo "✅ Credential scan complete"
+    }
+    
+
+🗂️ FILE & DIRECTORY STRUCTURE
+
+ Project Structure Template
+
+    ProjectName/
+    ├── Source/                     Python backend (PascalCase)
+    │   ├── API/                    API modules
+    │   ├── Core/                   Business logic
+    │   ├── Data/                   Data models
+    │   └── Utils/                  Utilities
+    ├── WebPages/                   Web frontend (ecosystem conventions)
+    │   ├── src/                    Source files (lowercase web standard)
+    │   ├── public/                 Static files (lowercase web standard)
+    │   ├── nodemodules/           npm dependencies (required lowercase)
+    │   └── package.json            npm configuration (required lowercase)
+    ├── Tests/                      Unit tests and test data
+    ├── Scripts/                    Utility scripts
+    ├── Docs/                       Documentation
+    │   ├── Standards/              Design standards
+    │   └── Architecture/           System docs
+    ├── Assets/                     Static assets
+    └── Archive/                    Archived files
+    
+
+🚨 CRITICAL ANTI-PATTERNS (NEVER DO THIS)
+
+ ❌ Header Violations
+
+     WRONG: Placeholder timestamps
+     Last Modified: YYYY-MM-DD  HH:MM[AM|PM]
+    
+     WRONG: Identical timestamps across files
+     Both files have: Last Modified: 2025-09-11  07:15PM
+    
+     WRONG: Absolute paths
+     Path: /home/user/Desktop/ProjectName/file.py
+    
+
+ ❌ Symlink Failures
+
+     WRONG: Assumes script location
+    scriptdir = Path(file).parent   Breaks with symlinks
+    projectname = scriptdir.name       Wrong project context
+    
+
+ ❌ Security Violations
+
+    // WRONG: Credentials in code
+    {
+      "clientsecret": "GOCSPX-actual-secret-here",
+      "apikey": "sk-1234567890abcdef"
+    }
+    
+
+ ❌ Ecosystem Violations
+
+    // WRONG: Fighting web conventions
+    Package.json        Should be package.json
+    NodeModules/       Should be nodemodules/
+    Index.html          Should be index.html
+    
+
+✅ VALIDATION & ENFORCEMENT
+--------------------------
+
+ Automated Compliance Check
+
+    def validatev25compliance(filepath, content):
+        """Validate file follows Design Standard v2.5"""
+        violations = []
+    
+         Check header presence
+        if 'AIDEV-PascalCase-2.5' not in content:
+            violations.append("Missing v2.5 standard declaration")
+    
+         Check timestamp authenticity
+        if 'HH:MM' in content or 'YYYY-MM-DD' in content:
+            violations.append("CRITICAL: Placeholder timestamp detected")
+    
+         Check path relativity
+        if '/home/' in content or 'C:\\' in content:
+            violations.append("CRITICAL: Absolute path detected")
+    
+         Check for credentials
+        credentialpatterns = ['clientsecret', 'apikey', 'password', 'secret']
+        if any(pattern in content.lower() for pattern in credentialpatterns):
+            violations.append("SECURITY VIOLATION: Credentials found")
+    
+         Check symlink pattern for Python scripts
+        if filepath.endswith('.py') and 'Symlink Pattern:' not in content:
+            violations.append("Missing symlink pattern declaration")
+    
+        return violations
+    
+
+ Session Quality Gates
+
+   Pre-commit: Validate all modified files
+   Pre-build: Complete security audit
+   Pre-distribution: Extract and inspect packages
+   Post-session: Check for duplicate timestamps
+
+  
+
+📊 SUCCESS METRICS
+
+ Zero Tolerance Metrics (Must be 100%)
+
+   ✅ Header accuracy and completeness
+   ✅ Timestamp uniqueness across files
+   ✅ Path relativity compliance
+   ✅ Ecosystem requirement adherence
+   ✅ Security audit completion
+   ✅ Symlink pattern declaration
+
+ Quality Metrics (Target >95%)
+
+   ✅ Description specificity and usefulness
+   ✅ Progressive timestamp realism
+   ✅ Context-appropriate naming choices
+   ✅ Defensive programming patterns
+
+
+🎯 COMMITMENT CONTRACT FOR AI ASSISTANTS
+
+By proceeding with Project Himalaya work, AI assistants commit to:
+
+1.  Session Acknowledgment: Always start with v2.5 compliance statement
+2.  Progressive Timestamps: Each file gets unique current time
+3.  Relative Paths: Never use absolute system paths
+4.  Ecosystem Research: Understand framework requirements before naming
+5.  Symlink Defense: Assume all scripts may be symlinked
+6.  Security First: No credentials in any code or builds
+7.  Context Awareness: Work in current directory, not script location
+8.  Immediate Correction: Accept session restart for violations
+
+  
+📈 DESIGN STANDARD EVOLUTION SUMMARY
+
+   v1.8: Basic header compliance and PascalCase foundation
+   v1.8a: AI timestamp accuracy requirements
+   v1.9: Enhanced AI collaboration protocols
+   v2.0: Web framework compatibility principles
+   v2.1: AI accountability and violation tracking
+   v2.2: Relative path requirements and Project\Startup integration
+   v2.3: Symlink-aware development patterns
+   v2.4: Distribution security framework
+   v2.5: Complete consolidation and AI optimization ← YOU ARE HERE
+
+  
+🎯 THE CORE PRINCIPLES
+
+1.  COMPATIBILITY FIRST: Use ecosystem requirements, document exceptions
+2.  REALITY OVER MEMOREX: Work where invoked, not where script lives
+3.  SECURITY ALWAYS: Every build is a distribution build
+4.  PROGRESSIVE TIMESTAMPS: Each file gets unique current time
+5.  RELATIVE PATHS: Portable, project-relative file references
+6.  DEFENSIVE PATTERNS: Assume symlinks, validate environment
+7.  CLEAR DOCUMENTATION: Every choice has a documented reason
+
+  
+BOTTOM LINE: Design Standard v2.5 is the definitive, consolidated guide for AI assistants working on Project Himalaya. It combines header compliance, ecosystem compatibility, symlink-aware development, and distribution security into a single, enforceable framework. No exceptions, no compromises, no violations.
+
+Compliance = Productivity. Violations = Chaos.

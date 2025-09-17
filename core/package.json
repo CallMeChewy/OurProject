@@ -1,0 +1,14 @@
+{
+  "name": "@ourlibrary/core",
+  "version": "1.0.0",
+  "description": "Shared OurLibrary bootstrap and token service modules",
+  "main": "index.js",
+  "license": "ISC",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.7.2",
+    "electron": "38.1.2",
+    "firebase": "^12.2.1",
+    "sql.js": "^1.13.0"
+  }
+}

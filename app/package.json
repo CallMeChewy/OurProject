@@ -1,0 +1,58 @@
+{
+  "name": "ourlibrary-app",
+  "version": "2.0.0",
+  "description": "OurLibrary Desktop Client",
+  "main": "main.js",
+  "homepage": "./",
+  "author": {
+    "name": "OurLibrary Community",
+    "email": "support@ourlibrary.com"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@ourlibrary/core": "^1.0.0",
+    "axios": "^1.7.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "electron": "38.1.2",
+    "electron-builder": "^24.9.1"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "node ../scripts/run-electron-builder.js"
+  },
+  "build": {
+    "npmRebuild": false,
+    "electronDist": "../node_modules/electron/dist",
+    "electronVersion": "38.1.2",
+    "afterPack": "../scripts/afterPack.js",
+    "appId": "com.ourlibrary.desktop",
+    "productName": "OurLibrary",
+    "files": [
+      "main.js",
+      "preload.js",
+      "new-desktop-library.html",
+      "web-shim.js",
+      "icon.png",
+      "Assets/"
+    ],
+    "asarUnpack": [
+      "Assets/sql.js/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../config/manifest.local.json",
+        "to": "config/manifest.local.json"
+      }
+    ],
+    "linux": {
+      "target": "AppImage",
+      "icon": "icon.png",
+      "category": "Education",
+      "executableArgs": [
+        "--no-sandbox"
+      ]
+    }
+  }
+}

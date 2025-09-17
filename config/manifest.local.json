@@ -1,0 +1,11 @@
+{
+  "latest_version": "0.0.0",
+  "minimum_required_version": "0.0.0",
+  "database_archive": {
+    "file_id": "local-dev-db",
+    "download_url": null,
+    "sha256": "",
+    "size_bytes": 0
+  },
+  "release_notes": "Local development fallback manifest."
+}

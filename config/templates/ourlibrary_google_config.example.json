@@ -1,0 +1,10 @@
+{
+  "database_url": "database/OurLibrary.db",
+  "database_file_id": "PLACEHOLDER_FILE_ID",
+  "database_filename": "OurLibrary.db",
+  "total_books": 0,
+  "sync_settings": {
+    "auto_sync_enabled": false,
+    "sync_interval_hours": 24
+  }
+}

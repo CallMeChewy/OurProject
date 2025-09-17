@@ -1,0 +1,3 @@
+*.json
+!manifest.local.json
+!templates/*.example.json

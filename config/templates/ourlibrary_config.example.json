@@ -1,0 +1,19 @@
+{
+  "google_credentials_path": "config/google_credentials.json",
+  "local_database_path": "database/OurLibrary.db",
+  "backup_database_path": "database/Backups/OurLibrary_backup.db",
+  "auto_sync_enabled": true,
+  "sync_interval_hours": 24,
+  "offline_grace_period_days": 7,
+  "version_check_interval_hours": 6,
+  "max_backup_versions": 5,
+  "required_free_space_mb": 100,
+  "auto_update_recommended": true,
+  "auto_update_optional": false,
+  "api_logging_enabled": true,
+  "usage_analytics_enabled": true,
+  "batch_upload_threshold": 50,
+  "error_reporting_enabled": true,
+  "public_database_url": "https://drive.google.com/uc?export=download&id=PLACEHOLDER_FILE_ID",
+  "fallback_database_enabled": true
+}

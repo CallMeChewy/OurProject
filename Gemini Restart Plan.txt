@@ -1,0 +1,35 @@
+# Gemini Restart Plan
+
+This note preserves the shared context for AI-assisted sessions so we can resume progress without re-reading the full history.
+
+## 1. Primary Objective
+
+Deliver the zero-budget, safety-first architecture captured in `docs/01-SystemDesign.md` and orchestrated through the sequencing milestones in `docs/03-SequencingPlan.md`.
+
+## 2. Current Focus
+
+- Stabilize the unified monorepo (`app/`, `core/`, `scripts/`, `services/`).
+- Implement the Firebase token service and manifest-driven updater outlined in the charter.
+- Replace any legacy Google Apps Script integrations with the new token workflow once Firebase infrastructure is provisioned.
+
+## 3. Key Assets
+
+- **Design & Charter**: `docs/00-ProjectCharter.md`, `docs/01-SystemDesign.md`.
+- **Runtime Code**: `app/` (Electron client) and `core/` (bootstrap + token service).
+- **Automation**: `scripts/` (release packaging, token lifecycle) and `services/apps-script/` (legacy coupon API).
+- **Configuration Templates**: `config/templates/*.example.json` – copy to `config/` and populate locally.
+
+## 4. Immediate Next Step
+
+Complete the token service integration:
+1. Provision Firebase project credentials (store them outside git using the templates).
+2. Implement `core/tokenService.js` authentication/URL issuance once Cloud Functions are live.
+3. Wire `app/main.js` download flow to request signed URLs and verify manifest hashes.
+
+## 5. Restart Prompt
+
+When resuming, remind the assistant with:
+
+"Please review `OurProject/Gemini Restart Plan.txt` for context and continue from the token service integration milestone."
+
+Maintain this plan at the end of each working session to keep momentum and avoid regressions.

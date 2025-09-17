@@ -1,0 +1,11 @@
+{
+  "name": "@ourlibrary/scripts",
+  "version": "1.0.0",
+  "description": "Operational CLI utilities for OurLibrary",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "manage-tokens": "node manage-tokens.js",
+    "package-release": "node package-release.js"
+  }
+}
