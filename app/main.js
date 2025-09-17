@@ -1,8 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const sqlite3 = require('sqlite3');
-const fs = require('fs');
-const axios = require('axios');
 const { Bootstrap } = require('@ourlibrary/core');
 
 let db;
@@ -44,9 +42,7 @@ app.whenReady().then(async () => {
     return;
   }
 
-  const os = require('os');
-  const ourLibraryPath = path.join(os.homedir(), 'OurLibrary');
-  const dbPath = path.join(ourLibraryPath, 'database', 'OurLibrary.db');
+  const dbPath = bootstrap.getDatabasePath();
 
   db = new sqlite3.Database(dbPath, (err) => {
     if (err) {

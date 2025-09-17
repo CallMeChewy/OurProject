@@ -167,6 +167,56 @@ class Bootstrap {
         return { updated, normalizedConfig };
     }
 
+    resolveConfigPath(relativePath) {
+        if (!this.appDir) {
+            throw new Error('Application directory not set');
+        }
+
+        if (!relativePath) {
+            return this.appDir;
+        }
+
+        if (path.isAbsolute(relativePath)) {
+            return relativePath;
+        }
+
+        const trimmed = relativePath.replace(/^\.?\//, '');
+        return path.join(this.appDir, trimmed);
+    }
+
+    getAppDirectory() {
+        return this.appDir;
+    }
+
+    getConfigPath() {
+        if (!this.appDir) {
+            throw new Error('Application directory not set');
+        }
+        return path.join(this.appDir, 'user_data', 'config.json');
+    }
+
+    getConfig() {
+        if (!this.config) {
+            throw new Error('Configuration not loaded');
+        }
+        return this.config;
+    }
+
+    getDatabasePath() {
+        const cfg = this.getConfig();
+        return this.resolveConfigPath(cfg.database_path);
+    }
+
+    getDownloadsDir() {
+        const cfg = this.getConfig();
+        return this.resolveConfigPath(cfg.downloads_dir);
+    }
+
+    getCacheDir() {
+        const cfg = this.getConfig();
+        return this.resolveConfigPath(cfg.cache_dir);
+    }
+
     getAppVersion() {
         if (this.appVersion) {
             return this.appVersion;

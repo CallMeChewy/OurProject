@@ -135,3 +135,29 @@ test('checkForUpdates surfaces manifest version deltas', async (t) => {
   assert.strictEqual(updateCheck.needsUpdate, true);
   assert.strictEqual(updateCheck.remote.latest_version, '2.0.0');
 });
+
+test('resolveConfigPath and getters provide absolute paths', async (t) => {
+  const tempAppDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
+  try {
+    const bootstrap = new Bootstrap();
+    bootstrap.appDir = tempAppDir;
+    bootstrap.config = {
+      database_path: './database/OurLibrary.db',
+      downloads_dir: './downloads',
+      cache_dir: './cache'
+    };
+
+    const dbPath = bootstrap.getDatabasePath();
+    const downloadsDir = bootstrap.getDownloadsDir();
+    const cacheDir = bootstrap.getCacheDir();
+
+    assert.ok(path.isAbsolute(dbPath));
+    assert.ok(path.isAbsolute(downloadsDir));
+    assert.ok(path.isAbsolute(cacheDir));
+    assert.match(dbPath, new RegExp(`${path.sep}database${path.sep}OurLibrary\.db$`));
+    assert.match(downloadsDir, new RegExp(`${path.sep}downloads$`));
+    assert.match(cacheDir, new RegExp(`${path.sep}cache$`));
+  } finally {
+    fs.rmSync(tempAppDir, { recursive: true, force: true });
+  }
+});
