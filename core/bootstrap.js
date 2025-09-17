@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const initSqlJs = require('sql.js');
 const axios = require('axios'); // For future token service calls
+const fileSystem = require('./modules/filesystem');
 
 class Bootstrap {
     constructor(options = {}) {
@@ -49,39 +49,13 @@ class Bootstrap {
         this.updateProgress('fileSystem', false, 'Creating directory structure');
 
         try {
-            // Determine the base directory for OurLibrary (always in user's home for AppImage/Linux app)
-            const homeDir = os.homedir();
-            this.appDir = path.join(homeDir, 'OurLibrary');
-            this.log(`Target app directory: ${this.appDir}`);
+            const { appDir, config } = fileSystem.prepareFileSystem({
+                log: this.log.bind(this),
+                getAppVersion: () => this.getAppVersion()
+            });
 
-            const directories = [
-                'cache',
-                'database',
-                'downloads',
-                'user_data',
-                'logs'
-            ];
-
-            // Ensure the main app directory exists
-            if (!fs.existsSync(this.appDir)) {
-                fs.mkdirSync(this.appDir, { recursive: true });
-                this.log(`Created app directory: ${this.appDir}`);
-            } else {
-                this.log(`App directory already exists: ${this.appDir}`);
-            }
-
-            for (const dir of directories) {
-                const fullPath = path.join(this.appDir, dir);
-                if (!fs.existsSync(fullPath)) {
-                    fs.mkdirSync(fullPath, { recursive: true });
-                    this.log(`Created directory: ${dir}`);
-                } else {
-                    this.log(`Directory exists: ${dir}`);
-                }
-            }
-
-            // Create initial config file if it doesn't exist
-            await this.createInitialConfig();
+            this.appDir = appDir;
+            this.config = config;
 
             this.updateProgress('fileSystem', true, 'File system ready');
             this.log('File system initialization completed');
@@ -93,95 +67,8 @@ class Bootstrap {
         }
     }
 
-    async createInitialConfig() {
-        const configPath = path.join(this.appDir, 'user_data', 'config.json');
-
-        let config;
-
-        if (!fs.existsSync(configPath)) {
-            config = {
-                app_name: "OurLibrary",
-                version: this.getAppVersion(),
-                database_path: "./database/OurLibrary.db",
-                cache_dir: "./cache",
-                downloads_dir: "./downloads",
-                installation_date: new Date().toISOString(),
-                user_preferences: {
-                    theme: "light",
-                    language: "en"
-                },
-                installation_complete: false,
-                app_directory: this.appDir
-            };
-
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-            this.log(`Created initial config: ${configPath}`);
-        } else {
-            config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        }
-
-        const { updated, normalizedConfig } = this.ensureConfigDefaults(config);
-
-        if (updated) {
-            fs.writeFileSync(configPath, JSON.stringify(normalizedConfig, null, 2));
-            this.log(`Updated config with default values: ${configPath}`);
-        }
-
-        this.config = normalizedConfig;
-    }
-
-    ensureConfigDefaults(existingConfig = {}) {
-        const normalizedConfig = { ...existingConfig };
-        let updated = false;
-
-        const defaults = {
-            app_name: "OurLibrary",
-            version: this.getAppVersion(),
-            database_path: "./database/OurLibrary.db",
-            cache_dir: "./cache",
-            downloads_dir: "./downloads",
-            installation_complete: false,
-            app_directory: this.appDir
-        };
-
-        for (const [key, value] of Object.entries(defaults)) {
-            if (normalizedConfig[key] === undefined || normalizedConfig[key] === null) {
-                normalizedConfig[key] = value;
-                updated = true;
-            }
-        }
-
-        if (!normalizedConfig.installation_date) {
-            normalizedConfig.installation_date = new Date().toISOString();
-            updated = true;
-        }
-
-        if (!normalizedConfig.user_preferences) {
-            normalizedConfig.user_preferences = {
-                theme: "light",
-                language: "en"
-            };
-            updated = true;
-        }
-
-        return { updated, normalizedConfig };
-    }
-
     resolveConfigPath(relativePath) {
-        if (!this.appDir) {
-            throw new Error('Application directory not set');
-        }
-
-        if (!relativePath) {
-            return this.appDir;
-        }
-
-        if (path.isAbsolute(relativePath)) {
-            return relativePath;
-        }
-
-        const trimmed = relativePath.replace(/^\.?\//, '');
-        return path.join(this.appDir, trimmed);
+        return fileSystem.resolveConfigPath(this.appDir, relativePath);
     }
 
     getAppDirectory() {
@@ -588,16 +475,12 @@ class Bootstrap {
             await this.initializeFileSystem();
             
             // Load config after filesystem is initialized and initial config is created
-            const configPath = path.join(this.appDir, 'user_data', 'config.json');
-            const loadedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            const { updated, normalizedConfig } = this.ensureConfigDefaults(loadedConfig);
+            const { config } = fileSystem.loadConfig(this.appDir, {
+                appVersion: this.getAppVersion(),
+                log: this.log.bind(this)
+            });
 
-            if (updated) {
-                fs.writeFileSync(configPath, JSON.stringify(normalizedConfig, null, 2));
-                this.log(`Updated config with default values: ${configPath}`);
-            }
-
-            this.config = normalizedConfig;
+            this.config = config;
 
             const updateCheck = await this.checkForUpdates();
 
