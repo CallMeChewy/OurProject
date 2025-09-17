@@ -67,6 +67,22 @@ Authoritative guidance lives under `docs/`:
 
 Additional setup notes are in `docs/SETUP_GOOGLE_SHEETS.md` and `docs/DEPLOY_APPS_SCRIPT.md`.
 
+## Registration Website (GitHub Pages)
+
+A trimmed, static registration experience lives in `docs/website/`. The bundle includes:
+
+- `index.html` – landing page + registration modal with Firebase hooks (API keys are placeholders).
+- `web-shim.js` – shares the same shim used by the desktop app; automatically resolves assets relative to the page location.
+- `Config/ourlibrary_google_config.json` – sanitized offline defaults (update with real values before launch).
+- `Assets/sql.js/*` – local sql.js runtime so the page works without external CDNs.
+
+To publish it via GitHub Pages:
+
+1. Push `main` to GitHub.
+2. In **Repository Settings → Pages**, choose **Deploy from branch**, pick `main`, and set the folder to `/docs`.
+3. After deployment, the registration page will be available at `https://<username>.github.io/OurProject/website/` (or at the configured custom domain). Update DNS/CNAME as needed.
+4. Replace the Firebase placeholders in `docs/website/index.html` with production credentials stored in your secrets manager.
+
 ## Contributing
 
 1. Fork the repository and create feature branches off `main`.

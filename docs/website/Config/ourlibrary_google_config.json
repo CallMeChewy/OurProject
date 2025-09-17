@@ -1,0 +1,9 @@
+{
+  "database_url": null,
+  "database_filename": null,
+  "total_books": 0,
+  "sync_settings": {
+    "auto_sync_enabled": false,
+    "sync_interval_hours": 24
+  }
+}

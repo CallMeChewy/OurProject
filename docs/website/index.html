@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="./web-shim.js"></script>
+  <!-- ourlibrary-force-app-route --><script>(function(){try{var qs=new URLSearchParams(location.search);if(!qs.has("noapp")){var h=location.hash||"";if(!/^#\/app(\/|$)/.test(h)){var url=location.pathname+location.search+"#/app";location.replace(url);}}}catch(e){console&&console.warn&&console.warn("force-app-route",e);}})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OurLibrary - Getting Education Into the Hands of People Who Can Least Afford It</title>
+    <!-- FORCE CACHE REFRESH v2 -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: #0f172a;
+        }
+        
+        .banner-container {
+            width: 100%;
+            height: 256px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .banner-image {
+            width: 100%;
+            object-fit: contain;
+            max-height: 100%;
+        }
+        
+        .category-card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(to right, #8b5cf6, #d946ef);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .attribution {
+            background-color: rgba(0, 0, 0, 0.5);
+            text-align: center;
+            padding: 0.25rem;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <!-- Attribution Banner -->
+    <div class="attribution">
+        Sponsored by BowersWorld.com
+    </div>
+
+    <!-- Banner Image -->
+    <div class="banner-container">
+        <img src="ProjectHimalayaBanner.png" alt="Project Himalaya - Human and AI collaboration" class="banner-image" loading="lazy">
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Project Name and Mission -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-6">OurLibrary</h1>
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-2xl text-yellow-400 font-semibold mb-6">
+                    "Getting education into the hands of people who can least afford it"
+                </h2>
+                <p class="text-xl text-gray-300 leading-relaxed mb-6">
+                    OurLibrary is a free digital library platform providing access to thousands of educational 
+                    books and resources. Our mission is to break down barriers to education by offering 
+                    completely free access to quality educational content for students worldwide.
+                </p>
+                <p class="text-lg text-gray-400 leading-relaxed mb-8">
+                    From elementary school textbooks to university-level research materials, we believe 
+                    that knowledge should be accessible to everyone, regardless of economic circumstances. 
+                    Join our community of learners and educators working together to democratize education.
+                </p>
+                
+                <!-- Call to Action Button -->
+                <div class="mb-12">
+                    <button id="getStartedBtn" onclick="showRegistrationModal()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-8 rounded-lg text-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        📚 Get Started - Join OurLibrary!
+                    </button>
+                    <p class="text-gray-400 mt-4 text-sm">
+                        Already a member? <a href="#signin" class="text-blue-400 hover:text-blue-300 underline">Sign in here</a>
+                    </p>
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Library Features -->
+        <h2 class="text-2xl font-bold text-white mb-8 text-center gradient-text">What's In Our Library</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <!-- Educational Materials -->
+            <div class="category-card text-center">
+                <div class="text-4xl mb-4">📚</div>
+                <h3 class="text-xl font-semibold mb-3 text-white">Educational Books</h3>
+                <p class="text-gray-300 text-sm">
+                    Thousands of textbooks, workbooks, and educational resources covering all subjects and grade levels.
+                </p>
+            </div>
+            
+            <!-- Multi-Language Support -->
+            <div class="category-card text-center">
+                <div class="text-4xl mb-4">🌍</div>
+                <h3 class="text-xl font-semibold mb-3 text-white">Multiple Languages</h3>
+                <p class="text-gray-300 text-sm">
+                    Books and materials available in multiple languages to serve diverse global communities.
+                </p>
+            </div>
+            
+            <!-- Offline Access -->
+            <div class="category-card text-center">
+                <div class="text-4xl mb-4">📱</div>
+                <h3 class="text-xl font-semibold mb-3 text-white">Offline Access</h3>
+                <p class="text-gray-300 text-sm">
+                    Download books for offline reading - perfect for areas with limited internet connectivity.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-4 border-t border-gray-800">
+        <div class="container mx-auto px-4 text-center text-gray-500">
+            © <span id="footer-year">2025</span> OurLibrary - Getting education into the hands of people who can least afford it. Sponsored by BowersWorld.com
+            <div class="mt-1">
+                <a href="#" class="text-blue-400 hover:text-blue-300 underline text-xs">📊 Analytics Dashboard</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Registration Modal (Stage 2) - FIXED BACKGROUND -->
+    <div id="registration-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-slate-900 rounded-xl p-8 max-w-md w-full border border-slate-600 shadow-2xl">
+                <h2 class="text-2xl font-bold text-white mb-4 text-center">Join OurLibrary</h2>
+                <p class="text-gray-300 text-center mb-6">Choose how you'd like to create your account:</p>
+                
+                <div class="space-y-4">
+                    <button onclick="continueWithGoogle()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-all duration-300">
+                        📧 Continue with Google
+                    </button>
+                    
+                    <p class="text-center text-gray-400">or</p>
+                    
+                    <button onclick="showRegistrationForm()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-all duration-300">
+                        📧 Register with Email & Password
+                    </button>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-400 text-sm">
+                        Already have an account? <a href="#signin" class="text-blue-400 hover:text-blue-300 underline">Sign in here</a>
+                    </p>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-300 underline mt-2">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Form (Stage 3) - FIXED BACKGROUND -->
+    <div id="registration-form" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-slate-900 rounded-xl p-8 max-w-md w-full border border-slate-600 max-h-screen overflow-y-auto shadow-2xl">
+                <div class="flex items-center mb-6">
+                    <button onclick="backToModal()" class="text-gray-400 hover:text-gray-300 mr-4">← Back</button>
+                    <h2 class="text-2xl font-bold text-white">Email Registration</h2>
+                </div>
+                
+                <form id="regForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Email Address (User ID) *</label>
+                        <input type="email" name="email" required class="w-full px-3 py-2 bg-slate-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="demo.user@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Full Name *</label>
+                        <input type="text" name="fullName" required class="w-full px-3 py-2 bg-slate-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Demo User">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Password *</label>
+                        <input type="password" name="password" required class="w-full px-3 py-2 bg-slate-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Confirm Password *</label>
+                        <input type="password" name="confirmPassword" required class="w-full px-3 py-2 bg-slate-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Zip Code</label>
+                        <input type="text" name="zipCode" class="w-full px-3 py-2 bg-slate-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="12345">
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="agreeTerms" name="agreeTerms" required class="mr-2">
+                        <label for="agreeTerms" class="text-sm text-gray-300">I agree to the <a href="#" class="text-blue-400 hover:text-blue-300 underline">Terms of Service</a> *</label>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300">
+                        Create Account & Send Verification
+                    </button>
+                    
+                    <div class="text-center">
+                        <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-300 underline">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Verification (Stage 4) - FIXED BACKGROUND -->
+    <div id="email-verification" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-slate-900 rounded-xl p-8 max-w-md w-full border border-slate-600 text-center shadow-2xl">
+                <div class="mb-6">
+                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">📧</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-2">📧 Verify Your Email</h2>
+                </div>
+                
+                <p class="text-gray-300 mb-4">We've sent a 6-digit verification code to:</p>
+                <p class="text-blue-400 font-semibold mb-6" id="verification-email">demo.user@example.com</p>
+                <p class="text-gray-400 text-sm mb-6">Enter the code below to complete your registration</p>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2">6-Digit Verification Code</label>
+                    <input type="text" id="verification-code" maxlength="6" class="w-full px-4 py-3 bg-slate-700 text-white text-center text-2xl tracking-widest rounded border-2 border-purple-500 focus:outline-none focus:border-purple-400" placeholder="000000">
+                </div>
+                
+                <button onclick="verifyCode()" class="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-all duration-300 mb-4">
+                    ✓ Verify Code & Complete Registration
+                </button>
+                
+                <button onclick="resendCode()" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 mb-4">
+                    📧 Resend Code
+                </button>
+                
+                <div class="bg-yellow-600 text-black p-3 rounded-lg text-sm mb-4">
+                    🔒 <strong>Security Note:</strong> This code expires in 15 minutes. Check your spam folder if you don't see the email.
+                </div>
+                
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-300 underline">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK v8 (compatible mode) - Cache busting for Auth fix -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js?v=auth-fix"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js?v=auth-fix"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js?v=auth-fix"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "your-project-id.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "G-YOUR_MEASUREMENT_ID"
+        };
+        
+        // Initialize Firebase - but check Auth availability first
+        firebase.initializeApp(firebaseConfig);
+        const functions = firebase.functions();
+        
+        // Dynamic Firebase Auth loading if not available
+        if (typeof firebase.auth === 'undefined') {
+            console.log('Firebase Auth not loaded - loading dynamically...');
+            const authScript = document.createElement('script');
+            authScript.src = 'https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js';
+            authScript.onload = () => {
+                console.log('Firebase Auth loaded dynamically! Auth available:', typeof firebase.auth);
+            };
+            document.head.appendChild(authScript);
+        } else {
+            console.log('Firebase Auth already available:', typeof firebase.auth);
+        }
+        
+        // Make functions globally available
+        window.firebaseFunctions = functions;
+        
+        console.log('Firebase initialized successfully!');
+    </script>
+    
+    <script>
+        // JavaScript for modal management
+        function showRegistrationModal() {
+            document.getElementById('registration-modal').classList.remove('hidden');
+        }
+        
+        function showRegistrationForm() {
+            document.getElementById('registration-modal').classList.add('hidden');
+            document.getElementById('registration-form').classList.remove('hidden');
+        }
+        
+        function backToModal() {
+            document.getElementById('registration-form').classList.add('hidden');
+            document.getElementById('registration-modal').classList.remove('hidden');
+        }
+        
+        function showEmailVerification() {
+            document.getElementById('registration-form').classList.add('hidden');
+            document.getElementById('email-verification').classList.remove('hidden');
+        }
+        
+        function closeModal() {
+            document.getElementById('registration-modal').classList.add('hidden');
+            document.getElementById('registration-form').classList.add('hidden');
+            document.getElementById('email-verification').classList.add('hidden');
+        }
+        
+        async function continueWithGoogle() {
+            try {
+                console.log('🔄 Initiating Google OAuth sign-in...');
+                
+                // Initialize Google Auth Provider
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.addScope('email');
+                provider.addScope('profile');
+                
+                // Sign in with popup
+                const result = await firebase.auth().signInWithPopup(provider);
+                const user = result.user;
+                
+                console.log('✅ Google OAuth successful:', {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName
+                });
+                
+                // Store user info
+                localStorage.setItem('ourlibrary_user', JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName || 'Google User',
+                    provider: 'google',
+                    verified: true,
+                    registeredAt: new Date().toISOString()
+                }));
+                
+                // Redirect to setup consent page
+                window.location.href = 'setup-consent.html';
+                
+            } catch (error) {
+                console.error('❌ Google OAuth failed:', error);
+                
+                if (error.code === 'auth/popup-closed-by-user') {
+                    alert('Sign-in was cancelled. Please try again.');
+                } else if (error.code === 'auth/popup-blocked') {
+                    alert('Pop-up was blocked. Please allow pop-ups for this site and try again.');
+                } else {
+                    alert('Google sign-in failed: ' + error.message);
+                }
+            }
+        }
+        
+        async function verifyCode() {
+            const enteredCode = document.getElementById('verification-code').value;
+            const correctCode = window.currentVerificationCode;
+            
+            if (enteredCode.length !== 6) {
+                alert('Please enter a 6-digit verification code.');
+                return;
+            }
+            
+            if (enteredCode.toUpperCase() === correctCode) {
+                // Code is correct - now create Firebase user account
+                try {
+                    console.log('Code verified! Creating Firebase user account...');
+                    
+                    // Get registration data
+                    const email = window.currentVerificationEmail;
+                    const password = window.currentVerificationPassword;
+                    const fullName = window.currentVerificationFullName;
+                    
+                    if (!email || !password || !fullName) {
+                        console.error('Missing registration data:', { email, password: password ? '[SET]' : '[MISSING]', fullName });
+                        alert('Registration data missing. Please start over.');
+                        return;
+                    }
+                    
+                    // Create Firebase user
+                    console.log('Creating Firebase user for:', email);
+                    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    
+                    console.log('Firebase user created successfully:', user.uid);
+                    
+                    // Update user profile with display name
+                    await user.updateProfile({
+                        displayName: fullName
+                    });
+                    
+                    console.log('User profile updated with display name:', fullName);
+                    
+                    alert('Account created successfully! Redirecting to setup...');
+                    window.location.href = 'setup-consent.html';
+                    
+                } catch (error) {
+                    console.error('Error creating Firebase user:', error);
+                    alert('Failed to create account: ' + error.message + '. Please try again.');
+                }
+            } else {
+                alert('Invalid verification code. Please check your email and try again.');
+                document.getElementById('verification-code').value = '';
+                document.getElementById('verification-code').focus();
+            }
+        }
+        
+        async function resendCode() {
+            const email = window.currentVerificationEmail;
+            if (!email) {
+                alert('No email found. Please start over.');
+                return;
+            }
+            
+            const resendBtn = document.querySelector('button[onclick="resendCode()"]');
+            const originalText = resendBtn.textContent;
+            
+            try {
+                resendBtn.disabled = true;
+                resendBtn.textContent = '📧 Sending...';
+                
+                // Generate new verification code
+                const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                window.currentVerificationCode = verificationCode;
+                
+                // Call Firebase function to send email
+                const sendEmail = window.firebaseFunctions.httpsCallable('sendVerificationEmail');
+                const result = await sendEmail({
+                    email: email,
+                    code: verificationCode
+                });
+                
+                console.log('Email resent successfully:', result.data);
+                alert('Verification code resent! Please check your email.');
+                
+            } catch (error) {
+                console.error('Error resending email:', error);
+                alert('Failed to resend email. Please try again.');
+            } finally {
+                resendBtn.disabled = false;
+                resendBtn.textContent = originalText;
+            }
+        }
+        
+        // Form submission handler with Firebase integration
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('regForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const email = this.email.value;
+                const fullName = this.fullName.value;
+                const password = this.password.value;
+                const confirmPassword = this.confirmPassword.value;
+                const submitBtn = this.querySelector('button[type="submit"]');
+                
+                // Validate password confirmation
+                if (password !== confirmPassword) {
+                    alert('Passwords do not match. Please try again.');
+                    return;
+                }
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending Verification Email...';
+                
+                try {
+                    // Check if Firebase is loaded
+                    if (!window.firebaseFunctions) {
+                        throw new Error('Firebase not loaded. Please refresh the page.');
+                    }
+                    
+                    // Generate verification code
+                    const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    
+                    // Store all registration data for verification
+                    window.currentVerificationCode = verificationCode;
+                    window.currentVerificationEmail = email;
+                    window.currentVerificationPassword = password;
+                    window.currentVerificationFullName = fullName;
+                    
+                    // Call Firebase function to send email
+                    const sendEmail = window.firebaseFunctions.httpsCallable('sendVerificationEmail');
+                    const result = await sendEmail({
+                        email: email,
+                        code: verificationCode
+                    });
+                    
+                    console.log('Email sent successfully:', result.data);
+                    
+                    // Show verification form
+                    document.getElementById('verification-email').textContent = email;
+                    showEmailVerification();
+                    
+                } catch (error) {
+                    console.error('Error sending email:', error);
+                    alert('Failed to send verification email: ' + error.message + '. Please try again.');
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Account & Send Verification';
+                }
+            });
+            
+            // Update footer year
+            document.getElementById('footer-year').textContent = new Date().getFullYear();
+        });
+    </script>
+</body>
+</html>
