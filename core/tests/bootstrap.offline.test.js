@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const Bootstrap = require('../bootstrap');
 const initSqlJs = require('sql.js');
+const manifestUtils = require('../modules/manifest');
 
 test('loadLocalManifestFallback picks up packaged manifest', async (t) => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-test-'));
@@ -31,12 +32,20 @@ test('loadLocalManifestFallback picks up packaged manifest', async (t) => {
     process.resourcesPath = resourcesDir;
     delete process.env.OURLIBRARY_MANIFEST_FALLBACK;
 
-    const bootstrap = new Bootstrap();
-    const result = bootstrap.loadLocalManifestFallback(new Error('network unavailable'));
+    const logs = [];
+    const result = manifestUtils.loadFallbackManifest({
+      explicitFallback: undefined,
+      cwd: process.cwd(),
+      dirname: __dirname,
+      resourcesPath: resourcesDir,
+      log: (msg) => logs.push(msg),
+      sourceError: new Error('network unavailable')
+    });
 
     assert.ok(result, 'expected manifest to load');
     assert.strictEqual(result.latest_version, '1.2.3');
     assert.strictEqual(result.__fromFallback, true);
+    assert.ok(logs.some((msg) => msg.includes('fallback manifest')), 'expected log entries for fallback');
   } finally {
     if (originalResourcesPath === undefined) {
       delete process.resourcesPath;

@@ -3,6 +3,7 @@ const path = require('path');
 const initSqlJs = require('sql.js');
 const axios = require('axios'); // For future token service calls
 const fileSystem = require('./modules/filesystem');
+const manifestUtils = require('./modules/manifest');
 
 class Bootstrap {
     constructor(options = {}) {
@@ -151,74 +152,22 @@ class Bootstrap {
     // --- Database Update Logic ---
     async getRemoteManifest() {
         try {
-            const response = await axios.get(this.versionUrl);
-            if (response.status !== 200) {
-                throw new Error(`HTTP ${response.status}: Failed to fetch manifest`);
-            }
-            const manifest = this.validateManifest(response.data);
-            return manifest;
+            return await manifestUtils.fetchRemoteManifest(this.versionUrl);
         } catch (error) {
             this.log(`Error fetching remote manifest: ${error.message}`);
-            const fallback = this.loadLocalManifestFallback(error);
+            const fallback = manifestUtils.loadFallbackManifest({
+                explicitFallback: process.env.OURLIBRARY_MANIFEST_FALLBACK,
+                cwd: process.cwd(),
+                dirname: __dirname,
+                resourcesPath: process.resourcesPath,
+                log: this.log.bind(this),
+                sourceError: error
+            });
             if (fallback) {
                 return fallback;
             }
             throw error;
         }
-    }
-
-    validateManifest(manifest) {
-        if (!manifest || typeof manifest !== 'object') {
-            throw new Error('Manifest response was empty or invalid');
-        }
-
-        const requiredFields = ['latest_version', 'minimum_required_version', 'database_archive'];
-        for (const field of requiredFields) {
-            if (manifest[field] === undefined || manifest[field] === null) {
-                throw new Error(`Manifest missing required field: ${field}`);
-            }
-        }
-
-        return manifest;
-    }
-
-    loadLocalManifestFallback(sourceError) {
-        const explicitFallback = process.env.OURLIBRARY_MANIFEST_FALLBACK;
-        const resourcePaths = [];
-
-        if (process.resourcesPath) {
-            resourcePaths.push(
-                path.join(process.resourcesPath, 'config', 'manifest.local.json'),
-                path.join(process.resourcesPath, 'app.asar.unpacked', 'config', 'manifest.local.json')
-            );
-        }
-
-        const candidatePaths = [
-            explicitFallback,
-            ...resourcePaths,
-            path.join(process.cwd(), 'config', 'manifest.local.json'),
-            path.join(__dirname, '..', 'config', 'manifest.local.json')
-        ].filter(Boolean);
-
-        for (const candidate of candidatePaths) {
-            try {
-                if (!fs.existsSync(candidate)) {
-                    continue;
-                }
-                const data = JSON.parse(fs.readFileSync(candidate, 'utf8'));
-                const manifest = this.validateManifest(data);
-                manifest.__fromFallback = true;
-                this.log(`Using fallback manifest at: ${candidate}`);
-                if (sourceError) {
-                    this.log(`Reason for fallback: ${sourceError.message}`);
-                }
-                return manifest;
-            } catch (fallbackError) {
-                this.log(`Failed to load fallback manifest from ${candidate}: ${fallbackError.message}`);
-            }
-        }
-
-        return null;
     }
 
     async getLocalDatabaseVersion() {
