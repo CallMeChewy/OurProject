@@ -70,4 +70,11 @@ Derived from `docs/02-DeploymentPlan.md` and `docs/03-SequencingPlan.md`. This d
 1. **Week 3–4** – Implement Firebase Auth, Functions, Firestore rules, and Drive integration.
 2. **Week 5–6** – Integrate publisher + desktop client with token service; add checksum verification.
 
+## 8. Desktop Download Roadmap
+
+- Expose a secure location to persist the user token (e.g., encrypted config or OS keychain).
+- Extend IPC (`download-file`) to request a signed URL via the token service before invoking `downloadDatabase`.
+- Surface quota/expiry errors to the renderer with actionable messaging.
+- Add smoke tests that stub the token service response and confirm downloads write SHA-validated databases.
+
 Keep this document updated as implementation progresses.
