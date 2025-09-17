@@ -4,6 +4,7 @@ const initSqlJs = require('sql.js');
 const axios = require('axios'); // For future token service calls
 const fileSystem = require('./modules/filesystem');
 const manifestUtils = require('./modules/manifest');
+const databaseUtils = require('./modules/database');
 
 class Bootstrap {
     constructor(options = {}) {
@@ -171,37 +172,12 @@ class Bootstrap {
     }
 
     async getLocalDatabaseVersion() {
-        const dbPath = path.join(this.appDir, this.config.database_path);
-        try {
-            if (!fs.existsSync(dbPath)) {
-                return { version: '0.0.0', exists: false };
-            }
-
-            const SQL = await initSqlJs({ locateFile: (filename) => this.resolveSqlJsAsset(filename) });
-            const fileBuffer = fs.readFileSync(dbPath);
-            const db = new SQL.Database(fileBuffer);
-
-            try {
-                const stmt = db.prepare("SELECT value FROM DatabaseMetadata WHERE key = 'version'");
-                if (stmt.step()) {
-                    const row = stmt.getAsObject();
-                    stmt.free();
-                    db.close();
-                    return { version: row.value || '0.0.0', exists: true };
-                } else {
-                    stmt.free();
-                    db.close();
-                    return { version: '0.0.0', exists: true };
-                }
-            } catch (err) {
-                this.log('No version found in database metadata, assuming 0.0.0');
-                db.close();
-                return { version: '0.0.0', exists: true };
-            }
-        } catch (error) {
-            this.log(`Error opening database for version check: ${error.message}`);
-            return { version: '0.0.0', exists: false };
-        }
+        const databasePath = this.getDatabasePath();
+        return databaseUtils.getLocalDatabaseVersion({
+            databasePath,
+            resolveSqlJsAsset: (filename) => this.resolveSqlJsAsset(filename),
+            log: this.log.bind(this)
+        });
     }
 
     compareVersions(version1, version2) {
@@ -262,8 +238,8 @@ class Bootstrap {
 
     async downloadDatabase(manifestEntry, progressCallback) {
         this.log(`Downloading database from: ${manifestEntry.download_url}`);
-        const tempPath = path.join(os.tmpdir(), `temp_database_download_${Date.now()}.zip`);
-        const dbPath = path.join(this.appDir, this.config.database_path);
+        const tempPath = databaseUtils.tempDownloadPath();
+        const dbPath = this.getDatabasePath();
 
         // TODO: Implement token service call to get a signed URL for the database archive
         // For now, we'll assume manifestEntry.download_url is a direct, publicly accessible URL
@@ -318,34 +294,11 @@ class Bootstrap {
     }
 
     async verifyDatabase(providedDbPath = null) {
-        const dbPath = providedDbPath || path.join(this.appDir, this.config.database_path);
-        try {
-            if (!fs.existsSync(dbPath)) {
-                throw new Error('Database file does not exist');
-            }
-
-            const SQL = await initSqlJs({ locateFile: (filename) => this.resolveSqlJsAsset(filename) });
-            const fileBuffer = fs.readFileSync(dbPath);
-            const db = new SQL.Database(fileBuffer);
-
-            try {
-                const stmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Books'");
-                const hasTable = stmt.step();
-                stmt.free();
-                db.close();
-
-                if (!hasTable) {
-                    throw new Error('Database missing required Books table');
-                }
-
-                return true;
-            } catch (err) {
-                db.close();
-                throw new Error(`Database validation failed: ${err.message}`);
-            }
-        } catch (error) {
-            throw new Error(`Database file is not valid: ${error.message}`);
-        }
+        const databasePath = providedDbPath || this.getDatabasePath();
+        return databaseUtils.verifyDatabase({
+            databasePath,
+            resolveSqlJsAsset: (filename) => this.resolveSqlJsAsset(filename)
+        });
     }
 
     async ensureDatabasePlaceholder() {
@@ -364,56 +317,17 @@ class Bootstrap {
     }
 
     async createBackup(dbPath) {
-        if (!fs.existsSync(dbPath)) {
-            return;
-        }
-        const backupDir = path.join(path.dirname(dbPath), 'Backups');
-        if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir, { recursive: true });
-        }
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const backupPath = path.join(backupDir, `OurLibrary_backup_${timestamp}.db`);
-        fs.copyFileSync(dbPath, backupPath);
-        this.log(`Database backed up to: ${backupPath}`);
+        databaseUtils.createBackup({ databasePath: dbPath, log: this.log.bind(this) });
     }
 
     async updateDatabaseVersion(newVersion) {
-        const dbPath = path.join(this.appDir, this.config.database_path);
-        try {
-            const SQL = await initSqlJs({ locateFile: (filename) => this.resolveSqlJsAsset(filename) });
-
-            let sqlDb;
-            if (fs.existsSync(dbPath)) {
-                const fileBuffer = fs.readFileSync(dbPath);
-                sqlDb = new SQL.Database(fileBuffer);
-            } else {
-                sqlDb = new SQL.Database();
-            }
-
-            try {
-                sqlDb.run(`CREATE TABLE IF NOT EXISTS DatabaseMetadata (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL,
-                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-                )`);
-                sqlDb.run(`INSERT OR REPLACE INTO DatabaseMetadata (key, value, updated_at) 
-                        VALUES (?, ?, datetime('now'))`, ['version', newVersion]);
-                sqlDb.run(`INSERT OR REPLACE INTO DatabaseMetadata (key, value, updated_at) 
-                        VALUES (?, ?, datetime('now'))`, ['last_updated', new Date().toISOString()]);
-
-                const data = sqlDb.export();
-                fs.writeFileSync(dbPath, data);
-                sqlDb.close();
-
-                this.log(`Database version updated to: ${newVersion}`);
-                return true;
-            } catch (err) {
-                sqlDb.close();
-                throw err;
-            }
-        } catch (error) {
-            throw new Error(`Failed to update database version: ${error.message}`);
-        }
+        const databasePath = this.getDatabasePath();
+        return databaseUtils.updateDatabaseVersion({
+            databasePath,
+            resolveSqlJsAsset: (filename) => this.resolveSqlJsAsset(filename),
+            log: this.log.bind(this),
+            newVersion
+        });
     }
 
     // --- Full Installation / Update Orchestration ---
