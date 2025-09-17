@@ -102,3 +102,36 @@ test('getLocalDatabaseVersion reads version metadata from sqlite db', async (t) 
     fs.rmSync(tempAppDir, { recursive: true, force: true });
   }
 });
+
+test('compareVersions handles different length inputs', (t) => {
+  const bootstrap = new Bootstrap();
+  assert.strictEqual(bootstrap.compareVersions('1.2.3', '1.2.3'), 0);
+  assert.strictEqual(bootstrap.compareVersions('1.2.3', '1.2.4'), -1);
+  assert.strictEqual(bootstrap.compareVersions('1.2.3', '1.2.3.1'), -1);
+  assert.strictEqual(bootstrap.compareVersions('1.2.3', '1.2'), 1);
+  assert.strictEqual(bootstrap.compareVersions('2.0.0', '1.9.9'), 1);
+  assert.strictEqual(bootstrap.compareVersions('1.10.0', '1.2.0'), 1);
+});
+
+test('checkForUpdates surfaces manifest version deltas', async (t) => {
+  const bootstrap = new Bootstrap();
+  bootstrap.appDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
+
+  // stub getRemoteManifest / getLocalDatabaseVersion
+  const remote = {
+    latest_version: '2.0.0',
+    minimum_required_version: '1.5.0',
+    database_archive: {
+      file_id: 'stub',
+      download_url: null
+    }
+  };
+
+  bootstrap.getRemoteManifest = async () => remote;
+  bootstrap.getLocalDatabaseVersion = async () => ({ version: '1.0.0', exists: true });
+
+  const updateCheck = await bootstrap.checkForUpdates();
+  assert.strictEqual(updateCheck.status, 'mandatory');
+  assert.strictEqual(updateCheck.needsUpdate, true);
+  assert.strictEqual(updateCheck.remote.latest_version, '2.0.0');
+});
