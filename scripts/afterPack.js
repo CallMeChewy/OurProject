@@ -26,6 +26,30 @@ async function patchAppRun(appOutDir) {
   }
 }
 
+async function trimLocales(appOutDir) {
+  const keep = new Set(['en-US.pak']);
+  const localeTargets = [
+    path.join(appOutDir, 'locales'),
+    path.join(appOutDir, 'resources', 'app.asar.unpacked', 'node_modules', 'electron', 'dist', 'locales')
+  ];
+
+  for (const dir of localeTargets) {
+    try {
+      const entries = await fs.readdir(dir);
+      await Promise.all(entries.map(async (item) => {
+        if (!keep.has(item)) {
+          await fs.unlink(path.join(dir, item));
+        }
+      }));
+      console.log(`[afterPack] Trimmed locales at ${dir}, kept ${Array.from(keep).join(', ')}`);
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        console.warn(`[afterPack] Could not trim locales at ${dir}: ${error.message}`);
+      }
+    }
+  }
+}
+
 module.exports = async ({ appOutDir, electronPlatformName }) => {
   if (electronPlatformName !== 'linux') {
     return;
@@ -38,4 +62,5 @@ module.exports = async ({ appOutDir, electronPlatformName }) => {
 
   await Promise.all(candidates.map(removeSandboxCandidate));
   await patchAppRun(appOutDir);
+  await trimLocales(appOutDir);
 };

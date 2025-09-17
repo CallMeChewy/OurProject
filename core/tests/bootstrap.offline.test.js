@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const Bootstrap = require('../bootstrap');
+const initSqlJs = require('sql.js');
 
 test('loadLocalManifestFallback picks up packaged manifest', async (t) => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-test-'));
@@ -64,6 +65,39 @@ test('ensureDatabasePlaceholder creates sqlite file when missing', async (t) => 
 
     const expectedPath = path.join(tempAppDir, './database/OurLibrary.db');
     assert.ok(fs.existsSync(expectedPath), 'placeholder database should exist');
+  } finally {
+    fs.rmSync(tempAppDir, { recursive: true, force: true });
+  }
+});
+
+test('getLocalDatabaseVersion reads version metadata from sqlite db', async (t) => {
+  const tempAppDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
+  try {
+    const dbDir = path.join(tempAppDir, 'database');
+    fs.mkdirSync(dbDir, { recursive: true });
+    const dbPath = path.join(dbDir, 'OurLibrary.db');
+
+    const SQL = await initSqlJs({
+      locateFile: (filename) => path.join(process.cwd(), 'app', 'Assets', 'sql.js', filename)
+    });
+    const db = new SQL.Database();
+    db.run(`CREATE TABLE IF NOT EXISTS DatabaseMetadata (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`);
+    db.run(`INSERT OR REPLACE INTO DatabaseMetadata (key, value, updated_at) VALUES ('version', ?, datetime('now'))`, ['2.3.4']);
+    const data = db.export();
+    fs.writeFileSync(dbPath, data);
+    db.close();
+
+    const bootstrap = new Bootstrap({ sqlJsAssetRoots: [path.join(process.cwd(), 'app', 'Assets', 'sql.js')] });
+    bootstrap.appDir = tempAppDir;
+    bootstrap.config = { database_path: './database/OurLibrary.db' };
+
+    const result = await bootstrap.getLocalDatabaseVersion();
+    assert.strictEqual(result.version, '2.3.4');
+    assert.strictEqual(result.exists, true);
   } finally {
     fs.rmSync(tempAppDir, { recursive: true, force: true });
   }
