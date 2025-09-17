@@ -53,7 +53,7 @@ The `scripts/` package contains placeholder CLIs for packaging releases and mana
 
 ```bash
 npm run package-release   # TODO: implement release automation
-npm run manage-tokens     # TODO: implement token lifecycle operations
+npm run manage-tokens     # Token service CLI (configure firebase-admin credentials)
 ```
 
 ## Documentation

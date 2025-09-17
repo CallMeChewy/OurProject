@@ -85,3 +85,19 @@ Deployment steps:
 - `docs/SECURITY.md` – incident response & secret handling
 
 Keep this document updated as processes evolve.
+
+## Appendix: Token Service CLI
+
+The token management CLI lives under `scripts/` and relies on `firebase-admin`. Install dependencies and set credentials before running:
+
+```bash
+npm install --workspace scripts
+export FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/serviceAccount.json
+npm run manage-tokens --workspace scripts -- create --tier free --max-downloads 3
+```
+
+Supported commands (more detail in `docs/TOKEN_SERVICE_PLAN.md`):
+
+- `create --tier <tier> [--max-downloads <n>] [--expires-in-hours <n>]`
+- `revoke <tokenId>`
+- `list [--status active]`
