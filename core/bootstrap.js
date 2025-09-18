@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const initSqlJs = require('sql.js');
 const axios = require('axios'); // For future token service calls
 const fileSystem = require('./modules/filesystem');
 const manifestUtils = require('./modules/manifest');
 const databaseUtils = require('./modules/database');
+const tokenClient = require('./modules/tokenClient');
 
 class Bootstrap {
     constructor(options = {}) {
@@ -104,6 +104,18 @@ class Bootstrap {
     getCacheDir() {
         const cfg = this.getConfig();
         return this.resolveConfigPath(cfg.cache_dir);
+    }
+
+    getDistributionToken() {
+        const cfg = this.getConfig();
+        return cfg.distribution_token || null;
+    }
+
+    async setDistributionToken(token) {
+        const cfg = this.getConfig();
+        cfg.distribution_token = token;
+        this.config = cfg;
+        fileSystem.saveConfig(this.appDir, cfg, { log: this.log.bind(this) });
     }
 
     getAppVersion() {
@@ -236,8 +248,36 @@ class Bootstrap {
         }
     }
 
-    async downloadDatabase(manifestEntry, progressCallback) {
-        this.log(`Downloading database from: ${manifestEntry.download_url}`);
+    async resolveDownloadInfo(manifestEntry) {
+        if (!manifestEntry) {
+            throw new Error('Manifest entry missing');
+        }
+
+        if (manifestEntry.download_url) {
+            return {
+                url: manifestEntry.download_url,
+                archive: manifestEntry
+            };
+        }
+
+        if (manifestEntry.file_id) {
+            const token = this.getDistributionToken() || process.env.OURLIBRARY_TOKEN;
+            if (!token) {
+                throw new Error('Distribution token not configured');
+            }
+
+            return tokenClient.requestSignedUrl({
+                token,
+                fileId: manifestEntry.file_id,
+                version: manifestEntry.version || manifestEntry.latest_version || this.getAppVersion()
+            });
+        }
+
+        throw new Error('Manifest does not provide download location');
+    }
+
+    async downloadDatabase(downloadInfo, progressCallback) {
+        this.log(`Downloading database from: ${downloadInfo.url}`);
         const tempPath = databaseUtils.tempDownloadPath();
         const dbPath = this.getDatabasePath();
 
@@ -250,7 +290,7 @@ class Bootstrap {
         try {
             const response = await axios({
                 method: 'get',
-                url: manifestEntry.download_url,
+                url: downloadInfo.url,
                 responseType: 'stream'
             });
 
@@ -364,12 +404,20 @@ class Bootstrap {
 
             // Download and update database if needed
             const archiveEntry = updateCheck.remote ? updateCheck.remote.database_archive : null;
-            const hasDownload = archiveEntry && archiveEntry.download_url;
 
             if (updateCheck.needsUpdate || !updateCheck.local.exists) {
-                if (hasDownload) {
+                let downloadInfo = null;
+                if (archiveEntry) {
+                    try {
+                        downloadInfo = await this.resolveDownloadInfo(archiveEntry);
+                    } catch (error) {
+                        this.log(`Unable to resolve download info: ${error.message}`);
+                    }
+                }
+
+                if (downloadInfo) {
                     this.updateProgress('database', false, 'Downloading latest database...');
-                    await this.downloadDatabase(archiveEntry, (progress, downloaded, total) => {
+                    await this.downloadDatabase(downloadInfo, (progress, downloaded, total) => {
                         const progressMessage = `Downloading database... ${progress.toFixed(1)}% (${(downloaded / 1024 / 1024).toFixed(1)}MB / ${(total / 1024 / 1024).toFixed(1)}MB)`;
                         this.updateProgress('database', false, progressMessage);
                         this.log(`Download progress: ${progress.toFixed(1)}%`);
@@ -377,7 +425,7 @@ class Bootstrap {
                     await this.updateDatabaseVersion(updateCheck.remote.latest_version);
                     this.updateProgress('database', true, 'Database installed/updated successfully');
                 } else {
-                    this.log('No download URL provided in manifest; creating placeholder database.');
+                    this.log('No download source available; creating placeholder database.');
                     await this.ensureDatabasePlaceholder();
                     this.updateProgress('database', true, 'Database placeholder ready');
                 }
@@ -405,15 +453,18 @@ class Bootstrap {
         this.updateProgress('config', false, 'Applying configuration');
 
         try {
-            const configPath = path.join(this.appDir, 'user_data', 'config.json');
-            let config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const { config } = fileSystem.loadConfig(this.appDir, {
+                appVersion: this.getAppVersion(),
+                log: this.log.bind(this)
+            });
 
             config.installation_date = new Date().toISOString();
             config.installation_version = installedVersion || this.getAppVersion();
             config.installation_complete = true;
             config.app_directory = this.appDir;
 
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+            fileSystem.saveConfig(this.appDir, config, { log: this.log.bind(this) });
+            this.config = config;
 
             this.updateProgress('config', true, 'Configuration complete');
             this.log('Application configuration completed');

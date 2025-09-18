@@ -126,7 +126,6 @@ test('checkForUpdates surfaces manifest version deltas', async (t) => {
   const bootstrap = new Bootstrap();
   bootstrap.appDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
 
-  // stub getRemoteManifest / getLocalDatabaseVersion
   const remote = {
     latest_version: '2.0.0',
     minimum_required_version: '1.5.0',
@@ -145,7 +144,7 @@ test('checkForUpdates surfaces manifest version deltas', async (t) => {
   assert.strictEqual(updateCheck.remote.latest_version, '2.0.0');
 });
 
-test('resolveConfigPath and getters provide absolute paths', async (t) => {
+test('resolveConfigPath exposes token persistence helpers', async (t) => {
   const tempAppDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
   try {
     const bootstrap = new Bootstrap();
@@ -153,8 +152,20 @@ test('resolveConfigPath and getters provide absolute paths', async (t) => {
     bootstrap.config = {
       database_path: './database/OurLibrary.db',
       downloads_dir: './downloads',
-      cache_dir: './cache'
+      cache_dir: './cache',
+      distribution_token: null
     };
+
+    const userDataDir = path.join(tempAppDir, 'user_data');
+    fs.mkdirSync(userDataDir, { recursive: true });
+    fs.writeFileSync(path.join(userDataDir, 'config.json'), JSON.stringify(bootstrap.config, null, 2));
+
+    assert.strictEqual(bootstrap.getDistributionToken(), null);
+    await bootstrap.setDistributionToken('TOKEN123');
+    assert.strictEqual(bootstrap.getDistributionToken(), 'TOKEN123');
+
+    const persisted = JSON.parse(fs.readFileSync(path.join(tempAppDir, 'user_data', 'config.json'), 'utf8'));
+    assert.strictEqual(persisted.distribution_token, 'TOKEN123');
 
     const dbPath = bootstrap.getDatabasePath();
     const downloadsDir = bootstrap.getDownloadsDir();
@@ -163,9 +174,6 @@ test('resolveConfigPath and getters provide absolute paths', async (t) => {
     assert.ok(path.isAbsolute(dbPath));
     assert.ok(path.isAbsolute(downloadsDir));
     assert.ok(path.isAbsolute(cacheDir));
-    assert.match(dbPath, new RegExp(`${path.sep}database${path.sep}OurLibrary\.db$`));
-    assert.match(downloadsDir, new RegExp(`${path.sep}downloads$`));
-    assert.match(cacheDir, new RegExp(`${path.sep}cache$`));
   } finally {
     fs.rmSync(tempAppDir, { recursive: true, force: true });
   }

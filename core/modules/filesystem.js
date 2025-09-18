@@ -23,6 +23,7 @@ function applyConfigDefaults(config, { appVersion, appDir }) {
     database_path: './database/OurLibrary.db',
     cache_dir: './cache',
     downloads_dir: './downloads',
+    distribution_token: null,
     installation_complete: false,
     app_directory: appDir
   };
@@ -84,6 +85,12 @@ function loadConfig(appDir, { appVersion, log } = {}) {
   return { config: normalized, configPath };
 }
 
+function saveConfig(appDir, config, { log } = {}) {
+  const configPath = path.join(appDir, 'user_data', 'config.json');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  if (log) log(`Saved configuration: ${configPath}`);
+}
+
 function resolveConfigPath(appDir, relativePath) {
   if (!appDir) {
     throw new Error('Application directory not set');
@@ -125,5 +132,6 @@ function prepareFileSystem({ log, getAppVersion, directories = DEFAULT_DIRECTORI
 module.exports = {
   prepareFileSystem,
   loadConfig,
+  saveConfig,
   resolveConfigPath,
 };

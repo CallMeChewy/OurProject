@@ -46,8 +46,52 @@ async function listTokens({ status }) {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
+async function issueDownloadUrl({ tokenId, version }) {
+  const firestore = getFirestore();
+  const tokenDoc = await firestore.collection('tokens').doc(tokenId).get();
+  if (!tokenDoc.exists) {
+    throw new Error('Token not found');
+  }
+  const token = tokenDoc.data();
+  if (token.status !== 'active') {
+    throw new Error(`Token status is ${token.status}`);
+  }
+  if (token.expiresAt && token.expiresAt.toDate() < new Date()) {
+    throw new Error('Token expired');
+  }
+  if (token.maxDownloads && token.usageCount >= token.maxDownloads) {
+    throw new Error('Token quota exceeded');
+  }
+
+  const archiveDoc = await firestore.collection('archives').doc(version).get();
+  if (!archiveDoc.exists) {
+    throw new Error(`Archive version ${version} not found`);
+  }
+  const archive = archiveDoc.data();
+
+  // TODO: integrate Drive API to produce a signed URL
+  const signedUrl = `https://drive.google.com/uc?export=download&id=${archive.fileId}`;
+
+  await tokenDoc.ref.update({
+    usageCount: (token.usageCount || 0) + 1,
+    lastUsedAt: Timestamp.now(),
+  });
+
+  return {
+    downloadUrl: signedUrl,
+    archive,
+    token: {
+      id: tokenId,
+      tier: token.tier,
+      usageCount: (token.usageCount || 0) + 1,
+      maxDownloads: token.maxDownloads ?? null,
+    },
+  };
+}
+
 module.exports = {
   createToken,
   revokeToken,
   listTokens,
+  issueDownloadUrl,
 };
