@@ -11,7 +11,7 @@
   "scripts": {
     "start": "npm start --workspace=app",
     "build": "npm run build --workspace=app",
-    "test": "node --test core/tests/*.test.js",
+    "test": "node --test core/tests/*.test.js scripts/tests/*.test.js",
     "manage-tokens": "npm run manage-tokens --workspace=scripts",
     "package-release": "npm run package-release --workspace=scripts"
   },

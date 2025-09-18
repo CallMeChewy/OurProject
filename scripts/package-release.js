@@ -109,6 +109,108 @@ async function writeMetadataFile(metadataPath, metadata) {
   await fsp.writeFile(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
 }
 
+async function packageRelease(rawOptions) {
+  const options = { ...rawOptions };
+
+  if (!options.database) {
+    throw new Error('`database` option is required');
+  }
+  if (!options.version) {
+    throw new Error('`version` option is required');
+  }
+
+  const databasePath = path.resolve(options.database);
+  const version = options.version.trim();
+  const innerPath = (options.innerPath || 'OurLibrary.db').replace(/^\/+/, '') || 'OurLibrary.db';
+  const outputDir = path.resolve(options.output || path.join(process.cwd(), 'dist', 'releases', version));
+  const manifestPath = path.resolve(options.manifest || path.join(process.cwd(), 'config', 'manifest.local.json'));
+  const assets = parseAssetSpecs(options.asset);
+  const metadataPath = path.resolve(options.metadataOut || path.join(outputDir, 'release-metadata.json'));
+  const dryRun = Boolean(options.dryRun);
+  const force = Boolean(options.force);
+  const skipManifest = Boolean(options.skipManifest);
+  const tier = options.tier || 'free';
+
+  const releaseNotes = options.notesFile
+    ? await fsp.readFile(path.resolve(options.notesFile), 'utf8')
+    : (options.notes || '');
+
+  const result = {
+    version,
+    dryRun,
+    outputDir,
+    zipPath: path.join(outputDir, `OurLibrary-db-${version}.zip`),
+    metadataPath,
+    manifestPath,
+    assets,
+    tier,
+    releaseNotes: releaseNotes.trim(),
+  };
+
+  if (dryRun) {
+    return result;
+  }
+
+  await ensureFileExists(databasePath, 'Database');
+  for (const asset of assets) {
+    await ensureFileExists(asset.src, `Asset ${asset.src}`);
+  }
+  await ensureFileExists(manifestPath, 'Manifest');
+
+  if (!force) {
+    if (fs.existsSync(result.zipPath)) {
+      throw new Error(`Archive already exists at ${result.zipPath}. Use --force to overwrite.`);
+    }
+    if (fs.existsSync(metadataPath)) {
+      throw new Error(`Metadata file already exists at ${metadataPath}. Use --force to overwrite.`);
+    }
+  }
+
+  const databaseEntry = { src: databasePath, dest: innerPath };
+  await createZipArchive({ databaseEntry, assetEntries: assets, outputPath: result.zipPath });
+
+  result.sizeBytes = (await fsp.stat(result.zipPath)).size;
+  result.sha256 = await sha256(result.zipPath);
+
+  result.metadata = {
+    version,
+    generatedAt: new Date().toISOString(),
+    sourceDatabase: databasePath,
+    archive: {
+      fileName: path.basename(result.zipPath),
+      innerPath,
+      sha256: result.sha256,
+      sizeBytes: result.sizeBytes,
+      tier,
+    },
+    assets: assets.map((asset) => ({ source: asset.src, destination: asset.dest })),
+    notes: result.releaseNotes,
+  };
+
+  await writeMetadataFile(metadataPath, result.metadata);
+
+  if (!skipManifest) {
+    await updateManifest({
+      manifestPath,
+      version,
+      minVersion: options.minVersion,
+      archiveInfo: {
+        fileName: path.basename(result.zipPath),
+        innerPath,
+        sha256: result.sha256,
+        sizeBytes: result.sizeBytes,
+        tier,
+      },
+      releaseNotes: releaseNotes,
+    });
+    result.manifestUpdated = true;
+  } else {
+    result.manifestUpdated = false;
+  }
+
+  return result;
+}
+
 async function main() {
   const argv = yargs(hideBin(process.argv))
     .scriptName('package-release')
@@ -181,109 +283,38 @@ async function main() {
     .strict()
     .argv;
 
-  const version = argv.version.trim();
-  const databasePath = path.resolve(argv.database);
-  const innerPath = argv.innerPath.replace(/^\/+/, '') || 'OurLibrary.db';
-  const outputDir = path.resolve(argv.output || path.join(process.cwd(), 'dist', 'releases', version));
-  const manifestPath = path.resolve(argv.manifest);
-  const assets = parseAssetSpecs(argv.asset);
-  const metadataPath = path.resolve(
-    argv.metadataOut || path.join(outputDir, 'release-metadata.json'),
-  );
+  const result = await packageRelease(argv);
 
-  const releaseNotes = argv.notesFile
-    ? await fsp.readFile(path.resolve(argv.notesFile), 'utf8')
-    : (argv.notes || '');
-
-  const zipFileName = `OurLibrary-db-${version}.zip`;
-  const zipPath = path.join(outputDir, zipFileName);
-
-  if (!argv.dryRun) {
-    await ensureFileExists(databasePath, 'Database');
-    for (const asset of assets) {
-      await ensureFileExists(asset.src, `Asset ${asset.src}`);
-    }
-    await ensureFileExists(manifestPath, 'Manifest');
-
-    if (!argv.force) {
-      if (fs.existsSync(zipPath)) {
-        throw new Error(`Archive already exists at ${zipPath}. Use --force to overwrite.`);
-      }
-      if (fs.existsSync(metadataPath)) {
-        throw new Error(`Metadata file already exists at ${metadataPath}. Use --force to overwrite.`);
-      }
-    }
-
-    const databaseEntry = { src: databasePath, dest: innerPath };
-    await createZipArchive({
-      databaseEntry,
-      assetEntries: assets,
-      outputPath: zipPath,
-    });
-
-    const sizeBytes = (await fsp.stat(zipPath)).size;
-    const hash = await sha256(zipPath);
-
-    const metadata = {
-      version,
-      generatedAt: new Date().toISOString(),
-      sourceDatabase: databasePath,
-      archive: {
-        fileName: zipFileName,
-        innerPath,
-        sha256: hash,
-        sizeBytes,
-        tier: argv.tier,
-      },
-      assets: assets.map((asset) => ({
-        source: asset.src,
-        destination: asset.dest,
-      })),
-      notes: releaseNotes.trim(),
-    };
-
-    await writeMetadataFile(metadataPath, metadata);
-
-    if (!argv.skipManifest) {
-      await updateManifest({
-        manifestPath,
-        version,
-        minVersion: argv.minVersion,
-        archiveInfo: {
-          fileName: zipFileName,
-          innerPath,
-          sha256: hash,
-          sizeBytes,
-          tier: argv.tier,
-        },
-        releaseNotes,
-      });
-    }
-
-    console.log('Release archive created:', zipPath);
-    console.log('Archive size (bytes):', sizeBytes);
-    console.log('Archive SHA-256:', hash);
-    console.log('Metadata written to:', metadataPath);
-    if (!argv.skipManifest) {
-      console.log('Manifest updated:', manifestPath);
-    }
-
-    console.log('\nNext steps:');
-    console.log('- Upload the zip archive to Drive and record the generated file ID.');
-    console.log('- Update Firestore `archives/{version}` with the file ID, size, sha256, and tier.');
-    console.log('- Once uploaded, set `database_archive.file_id` in the manifest or via deployment automation.');
-  } else {
-    console.log('[dry-run] Would package database from:', databasePath);
-    console.log('[dry-run] Archive would be written to:', zipPath);
-    console.log('[dry-run] Manifest would be updated at:', manifestPath);
-    if (assets.length) {
+  if (result.dryRun) {
+    console.log('[dry-run] Would package database from:', path.resolve(argv.database));
+    console.log('[dry-run] Archive would be written to:', result.zipPath);
+    console.log('[dry-run] Manifest would be updated at:', result.manifestPath);
+    if (result.assets.length) {
       console.log('[dry-run] Additional assets:');
-      assets.forEach((asset) => console.log(` - ${asset.src} -> ${asset.dest}`));
+      result.assets.forEach((asset) => console.log(` - ${asset.src} -> ${asset.dest}`));
     }
+    return;
   }
+
+  console.log('Release archive created:', result.zipPath);
+  console.log('Archive size (bytes):', result.sizeBytes);
+  console.log('Archive SHA-256:', result.sha256);
+  console.log('Metadata written to:', result.metadataPath);
+  if (result.manifestUpdated) {
+    console.log('Manifest updated:', result.manifestPath);
+  }
+
+  console.log('\nNext steps:');
+  console.log('- Upload the zip archive to Drive and record the generated file ID.');
+  console.log('- Update Firestore `archives/{version}` with the file ID, size, sha256, and tier.');
+  console.log('- Once uploaded, set `database_archive.file_id` in the manifest or via deployment automation.');
 }
 
-main().catch((error) => {
-  console.error('Release packaging failed:', error.message);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('Release packaging failed:', error.message);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { packageRelease };
