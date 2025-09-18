@@ -635,7 +635,17 @@
                     <button type="button" class="btn" id="listBtn" onclick="setViewMode('list')">📋 List</button>
                 </div>
             </div>
-            
+
+            <div class="sidebar-section">
+                <h3>🔐 Access Token</h3>
+                <p id="tokenStatus" class="text-sm" style="color: #cbd5f5; margin-bottom: 12px;">
+                    Checking token status...
+                </p>
+                <button type="button" class="btn" id="tokenButton" onclick="promptForToken()" style="width: 100%;">
+                    Configure Distribution Token
+                </button>
+            </div>
+
             <div class="sidebar-section">
                 <h3>🔍 Search Library</h3>
                 <input type="text" class="search-input" placeholder="Search books..." id="searchInput">
@@ -698,6 +708,75 @@
         // Global state
         let currentBooks = [];
         let currentViewMode = 'grid';
+        let currentDistributionToken = null;
+
+        function maskToken(token) {
+            if (!token || token.length <= 4) return token || 'not set';
+            return `${token.slice(0, 3)}…${token.slice(-3)}`;
+        }
+
+        function updateTokenStatus(message) {
+            const statusEl = document.getElementById('tokenStatus');
+            if (!statusEl) return;
+
+            if (message) {
+                statusEl.textContent = message;
+                return;
+            }
+
+            if (currentDistributionToken) {
+                statusEl.textContent = `Current token: ${maskToken(currentDistributionToken)}`;
+            } else {
+                statusEl.textContent = 'No distribution token configured. Downloads requiring authentication may fail.';
+            }
+        }
+
+        async function loadTokenStatus() {
+            const button = document.getElementById('tokenButton');
+            if (!window.api || !window.api.tokenGet) {
+                updateTokenStatus('Token management not available in this build.');
+                if (button) button.disabled = true;
+                return;
+            }
+
+            try {
+                const result = await window.api.tokenGet();
+                if (!result.success) {
+                    throw new Error(result.error || 'Unable to load token');
+                }
+                currentDistributionToken = result.token || null;
+                updateTokenStatus();
+            } catch (error) {
+                console.error('Token status error', error);
+                updateTokenStatus(`⚠️ ${error.message}`);
+            }
+        }
+
+        async function promptForToken() {
+            if (!window.api || !window.api.tokenSet) {
+                alert('Token management is not available in this build.');
+                return;
+            }
+
+            const input = window.prompt('Enter distribution token (leave blank to clear):', currentDistributionToken || '');
+            if (input === null) {
+                return;
+            }
+
+            const trimmed = input.trim();
+            try {
+                const result = await window.api.tokenSet(trimmed || null);
+                if (!result.success) {
+                    throw new Error(result.error || 'Unable to save token');
+                }
+                currentDistributionToken = trimmed || null;
+                updateTokenStatus('Token updated successfully.');
+                setTimeout(() => updateTokenStatus(), 3000);
+            } catch (error) {
+                console.error('Failed to save token', error);
+                updateTokenStatus(`⚠️ ${error.message}`);
+            }
+        }
         let isLoading = false;
 
         // Local File Access Functions
@@ -1522,9 +1601,11 @@
         // Wait for web-shim to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
+                loadTokenStatus();
                 setTimeout(initDropdownsWhenReady, 100);
             });
         } else {
+            loadTokenStatus();
             setTimeout(initDropdownsWhenReady, 100);
         }
     </script>
