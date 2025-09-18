@@ -107,3 +107,4 @@ Keep this document updated as implementation progresses.
 - Replace placeholder `generateSignedUrl` with real Drive API integration (using the configured service account).
 - Ensure Firestore has `tokens/` and `archives/` documents matching the expected schema.
 - Update maintainer docs and CLI scripts (`manage-tokens.js`) once the function is live.
+- Verify end-to-end by running `npm run manage-tokens --workspace scripts -- issue-url <token> <fileId> <version>` (providing `OURLIBRARY_TOKEN_ENDPOINT` if not set).

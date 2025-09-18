@@ -102,3 +102,4 @@ Supported commands (more detail in `docs/TOKEN_SERVICE_PLAN.md`):
 - `create --tier <tier> [--max-downloads <n>] [--expires-in-hours <n>]`
 - `revoke <tokenId>`
 - `list [--status active]`
+- `issue-url <token> <fileId> <version> [--endpoint https://...]` – calls the deployed token service to validate a token and retrieve a signed download URL; uses `OURLIBRARY_TOKEN_ENDPOINT` if set.

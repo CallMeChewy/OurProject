@@ -2,7 +2,16 @@
 
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+const axios = require('axios');
 const { createToken, revokeToken, listTokens } = require('../services/token-service/tokenManager');
+
+function resolveEndpoint(explicit) {
+  if (explicit) return explicit;
+  if (process.env.OURLIBRARY_TOKEN_ENDPOINT) {
+    return process.env.OURLIBRARY_TOKEN_ENDPOINT;
+  }
+  throw new Error('Set OURLIBRARY_TOKEN_ENDPOINT or pass --endpoint');
+}
 
 async function main() {
   const argv = yargs(hideBin(process.argv))
@@ -65,6 +74,38 @@ async function main() {
         });
       } catch (error) {
         console.error('Failed to list tokens:', error.message);
+        process.exitCode = 1;
+      }
+    })
+    .command('issue-url <token> <fileId> <version>', 'Request download URL via token service', (y) => (
+      y.option('endpoint', {
+        type: 'string',
+        describe: 'Override token service endpoint'
+      })
+    ), async (args) => {
+      try {
+        const endpoint = resolveEndpoint(args.endpoint);
+        const response = await axios.post(endpoint, {
+          token: args.token,
+          fileId: args.fileId,
+          version: args.version,
+        }, { timeout: 15000 });
+
+        const data = response.data || {};
+        console.log('Download URL:', data.downloadUrl);
+        if (data.quotaLimit != null) {
+          console.log(`Quota: ${data.quotaRemaining ?? 'unknown'} remaining of ${data.quotaLimit}`);
+        }
+        if (data.archive) {
+          console.log('Archive metadata:', data.archive);
+        }
+      } catch (error) {
+        if (error.response && error.response.data) {
+          const { message, code } = error.response.data;
+          console.error('Token service error:', message || error.response.statusText, code ? `(code: ${code})` : '');
+        } else {
+          console.error('Failed to issue download URL:', error.message);
+        }
         process.exitCode = 1;
       }
     })
