@@ -24,6 +24,7 @@ cp config/templates/ourlibrary_secret.example.json config/ourlibrary_secret.json
 
 - `config/manifest.local.json` is tracked and provides the offline bootstrap manifest bundled with the AppImage.
 - Keep all real credentials in a secrets manager; never commit populated JSON files.
+- `user_data/config.json` (generated on first run) now includes a `distribution_token` field; keep it `null` until you provision a valid token via the CLI or UI.
 
 ## 3. Desktop Bootstrap (Offline Friendly)
 
