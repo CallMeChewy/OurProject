@@ -1,6 +1,16 @@
 const { v4: uuidv4 } = require('uuid');
 const { Timestamp } = require('firebase-admin/firestore');
-const { getFirestore } = require('./admin');
+const { getFirestore, getServiceAccount } = require('./admin');
+const { generateWebContentLink } = require('./driveClient');
+
+function getDriveCredentials() {
+  const serviceAccount = getServiceAccount();
+  const { client_email: clientEmail, private_key: privateKey } = serviceAccount || {};
+  if (!clientEmail || !privateKey) {
+    throw new Error('Drive credentials are missing from the service account');
+  }
+  return { clientEmail, privateKey };
+}
 
 function parseExpiry(hours) {
   if (!hours) return null;
@@ -69,8 +79,16 @@ async function issueDownloadUrl({ tokenId, version }) {
   }
   const archive = archiveDoc.data();
 
-  // TODO: integrate Drive API to produce a signed URL
-  const signedUrl = `https://drive.google.com/uc?export=download&id=${archive.fileId}`;
+  const { clientEmail, privateKey } = getDriveCredentials();
+  let signedUrl;
+  try {
+    signedUrl = await generateWebContentLink({ clientEmail, privateKey, fileId: archive.fileId });
+  } catch (error) {
+    throw new Error(`Failed to generate Drive download link: ${error.message}`);
+  }
+  if (!signedUrl) {
+    throw new Error('Drive file is not accessible or shareable');
+  }
 
   await tokenDoc.ref.update({
     usageCount: (token.usageCount || 0) + 1,

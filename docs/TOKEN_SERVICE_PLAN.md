@@ -13,7 +13,7 @@ Derived from `docs/02-DeploymentPlan.md` and `docs/03-SequencingPlan.md`. This d
 
 - **Service Account / Drive Access**
   - Provision a Google Drive service account with access to the archive folder.
-  - Store Drive credentials in Firebase Functions config (`firebase functions:config:set drive.client_id=...`).
+  - Store Drive credentials in Firebase Functions config (`firebase functions:config:set drive.client_email=...`).
 
 ## 2. Cloud Functions
 
@@ -21,8 +21,9 @@ Derived from `docs/02-DeploymentPlan.md` and `docs/03-SequencingPlan.md`. This d
   - Verifies token exists, is active, and tier permits the requested archive.
   - Checks quota (`usageCount < maxDownloads`).
   - Retrieves Drive `fileId` from `archives/{version}`.
-  - Calls Drive API to create a short-lived download URL.
+  - Calls Drive API to create a short-lived download URL (implemented in `driveClient.js`).
   - Increments usage counter and logs audit record (`downloads/{doc}`).
+  - Expose both a callable endpoint and an HTTP endpoint (CORS-enabled) mapping `HttpsError` codes to HTTP status codes.
 
 - **revokeToken(tokenId)**
   - Sets `status = 'revoked'` and records `revokedAt` timestamp.

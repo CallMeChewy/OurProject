@@ -1,38 +1,52 @@
 const axios = require('axios');
 
-async function requestSignedUrl({ token, fileId, version }) {
+const DEFAULT_ENDPOINT = process.env.OURLIBRARY_TOKEN_ENDPOINT
+  || process.env.OURLIBRARY_TOKEN_HTTP_ENDPOINT
+  || 'https://us-central1-your-project.cloudfunctions.net/issueDownloadUrlHttp';
+
+async function requestSignedUrl({ token, fileId, version, endpoint = DEFAULT_ENDPOINT, timeoutMs = 15000 }) {
   if (!token) {
     throw new Error('Distribution token is required to request a download URL.');
   }
+  if (!fileId) {
+    throw new Error('fileId is required to request a download URL.');
+  }
+  if (!version) {
+    throw new Error('version is required to request a download URL.');
+  }
+  if (!endpoint) {
+    throw new Error('Token service endpoint is not configured.');
+  }
 
-  const endpoint = process.env.OURLIBRARY_TOKEN_ENDPOINT
-    || 'https://us-central1-your-project.cloudfunctions.net/issueDownloadUrl';
-
-  const payload = {
-    token,
-    fileId,
-    version,
-  };
+  const payload = { token, fileId, version };
 
   try {
     const response = await axios.post(endpoint, payload, {
-      timeout: 15000,
+      timeout: timeoutMs,
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (response.status !== 200 || !response.data) {
       throw new Error(`Token service responded with status ${response.status}`);
     }
 
-    const { downloadUrl, quotaRemaining, quotaLimit } = response.data;
+    if (response.data.error) {
+      const err = new Error(response.data.error.message || 'Token service reported an error');
+      err.code = response.data.error.code;
+      throw err;
+    }
+
+    const { downloadUrl, quotaRemaining, quotaLimit, archive } = response.data;
     if (!downloadUrl) {
       throw new Error('Token service did not return a download URL');
     }
 
     return {
       url: downloadUrl,
-      archive: response.data.archive || null,
+      archive: archive || null,
       quotaRemaining,
       quotaLimit,
+      raw: response.data,
     };
   } catch (error) {
     if (error.response && error.response.data) {

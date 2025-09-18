@@ -120,3 +120,6 @@ dist_V1/
 # Special exclusion for directories starting with '..'
 ..*
 Gemini Library/
+
+# Firebase runtime config
+services/token-service/functions/.runtimeconfig.json

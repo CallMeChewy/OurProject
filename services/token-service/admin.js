@@ -1,6 +1,7 @@
 const path = require('path');
 let admin;
 let firestore;
+let serviceAccount;
 
 function getCredentialsPath() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
@@ -27,11 +28,19 @@ function initializeFirebase() {
   // eslint-disable-next-line global-require
   admin = require('firebase-admin');
   // eslint-disable-next-line import/no-dynamic-require, global-require
-  const serviceAccount = require(resolvedPath);
+  serviceAccount = require(resolvedPath);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
   return admin;
+}
+
+function getServiceAccount() {
+  if (serviceAccount) {
+    return serviceAccount;
+  }
+  initializeFirebase();
+  return serviceAccount;
 }
 
 function getFirestore() {
@@ -46,4 +55,5 @@ function getFirestore() {
 module.exports = {
   initializeFirebase,
   getFirestore,
+  getServiceAccount,
 };
