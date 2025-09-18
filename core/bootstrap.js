@@ -281,11 +281,8 @@ class Bootstrap {
         const tempPath = databaseUtils.tempDownloadPath();
         const dbPath = this.getDatabasePath();
 
-        // TODO: Implement token service call to get a signed URL for the database archive
-        // For now, we'll assume manifestEntry.download_url is a direct, publicly accessible URL
-        // In the future, this will involve: 
-        // 1. Calling the Firebase Cloud Function to get a signed URL for manifestEntry.file_id
-        // 2. Downloading the file from the signed URL
+        // downloadInfo.url may be a direct link or a short-lived Drive URL from the token service.
+        // The caller (resolveDownloadInfo) already handled token validation and link issuance.
 
         try {
             const response = await axios({
