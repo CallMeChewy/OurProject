@@ -9,6 +9,7 @@
     "package-release": "node package-release.js"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "firebase-admin": "^12.5.0",
     "uuid": "^9.0.1",
     "yargs": "^17.7.2"
