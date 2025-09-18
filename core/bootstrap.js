@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const axios = require('axios'); // For future token service calls
 const fileSystem = require('./modules/filesystem');
 const manifestUtils = require('./modules/manifest');
@@ -309,8 +310,31 @@ class Bootstrap {
                 writer.on('error', reject);
             });
 
-            // TODO: Verify SHA-256 hash of the downloaded file against manifestEntry.sha256
-            this.log('Downloaded database archive. SHA-256 verification skipped for now.');
+            const expectedSha = downloadInfo.archive && typeof downloadInfo.archive.sha256 === 'string'
+                ? downloadInfo.archive.sha256.trim().toLowerCase()
+                : null;
+
+            if (expectedSha) {
+                const actualSha = await new Promise((resolve, reject) => {
+                    const hash = crypto.createHash('sha256');
+                    const stream = fs.createReadStream(tempPath);
+                    stream.on('error', reject);
+                    stream.on('data', (chunk) => hash.update(chunk));
+                    stream.on('end', () => resolve(hash.digest('hex')));
+                });
+
+                if (actualSha !== expectedSha) {
+                    try {
+                        fs.unlinkSync(tempPath);
+                    } catch (cleanupError) {
+                        this.log(`Failed to remove temp archive after hash mismatch: ${cleanupError.message}`);
+                    }
+                    throw new Error(`Downloaded archive failed integrity check (expected ${expectedSha}, got ${actualSha})`);
+                }
+                this.log('Downloaded database archive. SHA-256 verification passed.');
+            } else {
+                this.log('Downloaded database archive. SHA-256 verification skipped (no hash provided).');
+            }
 
             // TODO: Extract the database from the zip archive
             // For now, assuming the download_url points directly to the .db file

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { PassThrough } = require('node:stream');
+const crypto = require('node:crypto');
 
 const axiosModulePath = require.resolve('axios');
 const originalAxios = require(axiosModulePath);
@@ -19,6 +20,7 @@ test('downloadDatabase streams signed URL into local file', async (t) => {
   let tokenStubCalled = false;
   let axiosCalled = false;
   const downloadBuffer = Buffer.from('fake-sqlite-db');
+  const expectedHash = crypto.createHash('sha256').update(downloadBuffer).digest('hex');
 
   const axiosStub = async (options) => {
     axiosCalled = true;
@@ -41,7 +43,7 @@ test('downloadDatabase streams signed URL into local file', async (t) => {
       assert.strictEqual(version, '4.5.6');
       return {
         url: 'https://signed.example/download',
-        archive: { file_id: fileId, version },
+        archive: { file_id: fileId, version, sha256: expectedHash },
       };
     },
   };
@@ -76,6 +78,59 @@ test('downloadDatabase streams signed URL into local file', async (t) => {
     assert.ok(dbContent.length > 0);
     assert.ok(tokenStubCalled, 'token client should be called');
     assert.ok(axiosCalled, 'axios should fetch signed URL');
+  } finally {
+    databaseUtils.tempDownloadPath = originalTempDownloadPath;
+    require.cache[axiosModulePath].exports = originalAxios;
+    require.cache[tokenClientPath].exports = originalTokenClient;
+    delete require.cache[require.resolve('../bootstrap')];
+    fs.rmSync(tempAppDir, { recursive: true, force: true });
+  }
+});
+
+
+test('downloadDatabase rejects when SHA-256 does not match', async (t) => {
+  const tempAppDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
+
+  const downloadBuffer = Buffer.from('fake-sqlite-db');
+  const wrongHash = 'deadbeef';
+
+  const axiosStub = async () => {
+    const stream = new PassThrough();
+    stream.end(downloadBuffer);
+    return {
+      status: 200,
+      data: stream,
+      headers: { 'content-length': String(downloadBuffer.length) },
+    };
+  };
+
+  try {
+    require.cache[axiosModulePath].exports = axiosStub;
+    require.cache[tokenClientPath].exports = {
+      requestSignedUrl: async () => ({
+        url: 'https://signed.example/download',
+        archive: { file_id: 'file-xyz', version: '4.5.6', sha256: wrongHash },
+      }),
+    };
+    delete require.cache[require.resolve('../bootstrap')];
+    const Bootstrap = require('../bootstrap');
+    databaseUtils.tempDownloadPath = () => path.join(tempAppDir, 'download-temp.db');
+
+    const bootstrap = new Bootstrap();
+    bootstrap.appDir = tempAppDir;
+    bootstrap.config = {
+      database_path: './database/OurLibrary.db',
+      downloads_dir: './downloads',
+      cache_dir: './cache',
+      distribution_token: 'TOK123'
+    };
+
+    fs.mkdirSync(path.join(tempAppDir, 'database'), { recursive: true });
+    fs.mkdirSync(path.join(tempAppDir, 'downloads'), { recursive: true });
+    fs.mkdirSync(path.join(tempAppDir, 'cache'), { recursive: true });
+
+    const info = await bootstrap.resolveDownloadInfo({ file_id: 'file-xyz', version: '4.5.6' });
+    await assert.rejects(() => bootstrap.downloadDatabase(info), /integrity check/);
   } finally {
     databaseUtils.tempDownloadPath = originalTempDownloadPath;
     require.cache[axiosModulePath].exports = originalAxios;
