@@ -7,6 +7,7 @@ const path = require('node:path');
 const Bootstrap = require('../bootstrap');
 const initSqlJs = require('sql.js');
 const manifestUtils = require('../modules/manifest');
+const tokenClient = require('../modules/tokenClient');
 
 test('loadLocalManifestFallback picks up packaged manifest', async (t) => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-test-'));
@@ -142,6 +143,22 @@ test('checkForUpdates surfaces manifest version deltas', async (t) => {
   assert.strictEqual(updateCheck.status, 'mandatory');
   assert.strictEqual(updateCheck.needsUpdate, true);
   assert.strictEqual(updateCheck.remote.latest_version, '2.0.0');
+});
+
+test('resolveDownloadInfo errors when token missing', async (t) => {
+  const bootstrap = new Bootstrap();
+  bootstrap.appDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
+  bootstrap.config = {
+    database_path: './database/OurLibrary.db',
+    downloads_dir: './downloads',
+    cache_dir: './cache',
+    distribution_token: null
+  };
+
+  const manifestEntry = { file_id: 'abc123', version: '1.0.0' };
+  await assert.rejects(() => bootstrap.resolveDownloadInfo(manifestEntry), /Distribution token not configured/);
+
+  fs.rmSync(bootstrap.appDir, { recursive: true, force: true });
 });
 
 test('resolveConfigPath exposes token persistence helpers', async (t) => {
