@@ -19,7 +19,7 @@
 
 ### 3.1 Content Distribution
 
-- Package the SQLite catalogue and essential assets into versioned archives (e.g., `OurLibrary-db-vYYYYMMDD.zip`).
+- Package the SQLite catalogue and essential assets into versioned archives (e.g., `OurLibrary-db-vYYYYMMDD.zip`) and record SHA-256 checksums plus inner database paths in the release manifest.
 - Keep the master archives in a private Google Drive folder owned by a service account; do **not** enable public link sharing.
 - Publish a companion `manifest.json` per release containing file IDs, sizes, SHA-256 hashes, entitlement tier (`free`, `premium`), and release notes.
 - Mirror `manifest.json` to Firebase Hosting (free tier) to provide low-latency metadata without exposing Drive credentials. Download URLs are generated on demand by the token service (Section 3.3).

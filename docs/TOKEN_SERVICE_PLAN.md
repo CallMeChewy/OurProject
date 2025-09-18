@@ -105,7 +105,7 @@ Keep this document updated as implementation progresses.
 5. Store the deployed endpoint in app environment (`OURLIBRARY_TOKEN_ENDPOINT`).
 
 ### After deployment
-- Replace placeholder `generateSignedUrl` with real Drive API integration (using the configured service account).
-- Ensure Firestore has `tokens/` and `archives/` documents matching the expected schema.
-- Update maintainer docs and CLI scripts (`manage-tokens.js`) once the function is live.
-- Verify end-to-end by running `npm run manage-tokens --workspace scripts -- issue-url <token> <fileId> <version>` (providing `OURLIBRARY_TOKEN_ENDPOINT` if not set).
+- Confirm Drive integration by calling either `issueDownloadUrl` (callable) or `issueDownloadUrlHttp` (REST) and inspecting the returned `webContentLink`.
+- Ensure Firestore has `tokens/` and `archives/` documents matching the expected schema, including `sha256`, `sizeBytes`, and optional `innerPath` for zipped archives.
+- Update maintainer docs and CLI scripts (`manage-tokens.js`) to align with the deployed endpoints and auth requirements.
+- Verify end-to-end by running the desktop bootstrap against staging (set `OURLIBRARY_TOKEN_ENDPOINT`) and confirming the SHA-256/zip extraction succeeds.
