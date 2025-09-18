@@ -141,3 +141,20 @@ ipcMain.handle('download-file', async (event, { bookId, fileName }) => {
   dialog.showErrorBox('Not Implemented', 'The download functionality is not yet implemented in the new architecture.');
   return { success: false, error: 'Not Implemented' };
 });
+
+ipcMain.handle('token:get', async () => {
+  try {
+    return { success: true, token: bootstrap.getDistributionToken() };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('token:set', async (event, token) => {
+  try {
+    await bootstrap.setDistributionToken(token || null);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});

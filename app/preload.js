@@ -8,4 +8,6 @@ contextBridge.exposeInMainWorld('api', {
   dbQuery: (sql, params) => ipcRenderer.invoke('db:query', sql, params),
   fileOpenExternal: (filePath) => ipcRenderer.invoke('file:openExternal', filePath),
   downloadFile: (options) => ipcRenderer.invoke('download-file', options),
+  tokenGet: () => ipcRenderer.invoke('token:get'),
+  tokenSet: (token) => ipcRenderer.invoke('token:set', token),
 });
