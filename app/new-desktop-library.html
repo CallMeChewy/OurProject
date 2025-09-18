@@ -709,6 +709,39 @@
         let currentBooks = [];
         let currentViewMode = 'grid';
         let currentDistributionToken = null;
+        let toastContainer = null;
+        function ensureToastContainer() {
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.style.position = 'fixed';
+                toastContainer.style.bottom = '20px';
+                toastContainer.style.right = '20px';
+                toastContainer.style.zIndex = '9999';
+                toastContainer.style.display = 'flex';
+                toastContainer.style.flexDirection = 'column';
+                toastContainer.style.alignItems = 'flex-end';
+                document.body.appendChild(toastContainer);
+            }
+            return toastContainer;
+        }
+
+        function showToast(message, isError = false) {
+            const container = ensureToastContainer();
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.marginTop = '10px';
+            toast.style.padding = '12px 16px';
+            toast.style.borderRadius = '8px';
+            toast.style.background = isError ? 'rgba(220, 38, 38, 0.9)' : 'rgba(16, 185, 129, 0.9)';
+            toast.style.color = '#fff';
+            toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+            toast.style.fontSize = '14px';
+            toast.style.transition = 'opacity 0.4s ease';
+            toast.style.opacity = '1';
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 4000);
+        }
 
         function maskToken(token) {
             if (!token || token.length <= 4) return token || 'not set';
@@ -1128,6 +1161,7 @@
                 
             } catch (error) {
                 console.error('Search error:', error);
+                showToast('Search failed: ' + error.message, true);
                 document.getElementById('contentArea').innerHTML = 
                     `<div class="error">❌ Search failed: ${error.message}</div>`;
                 document.getElementById('searchStats').innerHTML = '❌ Search failed';
@@ -1140,6 +1174,7 @@
             const book = currentBooks.find(b => b.ID === bookId);
             if (!book) {
                 console.error('Book not found with ID:', bookId);
+            showToast('Could not find book details.', true);
                 return;
             }
             
@@ -1150,6 +1185,7 @@
                 
                 if (!books || books.length === 0) {
                     console.error('Book not found in database');
+                    showToast('This book is not available for preview.', true);
                     return;
                 }
                 
@@ -1609,5 +1645,6 @@
             setTimeout(initDropdownsWhenReady, 100);
         }
     </script>
+<div id="toastContainer" class="hidden" style="display:none;"></div>
 </body>
 </html>
