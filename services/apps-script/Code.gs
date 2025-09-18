@@ -1,8 +1,8 @@
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID'; // TODO: Replace with your Spreadsheet ID
+const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 const ROSTER_SHEET = 'Roster';
 const COUPON_BALANCES_SHEET = 'CouponBalances';
 const COUPON_LEDGER_SHEET = 'CouponLedger';
-const SECRET_KEY = 'YOUR_SECRET_KEY'; // TODO: Replace with your secret key
+const SECRET_KEY = PropertiesService.getScriptProperties().getProperty('SECRET_KEY');
 
 function doGet(e) {
   return ContentService.createTextOutput('Invalid request method. Please use POST.');
