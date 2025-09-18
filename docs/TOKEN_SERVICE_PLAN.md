@@ -78,3 +78,32 @@ Derived from `docs/02-DeploymentPlan.md` and `docs/03-SequencingPlan.md`. This d
 - Add smoke tests that stub the token service response and confirm downloads write SHA-validated databases.
 
 Keep this document updated as implementation progresses.
+
+## 9. Deployment Steps (Current Skeleton)
+
+- `services/token-service/` contains a Firebase Functions project scaffold:
+  - `functions/index.js` exposes `issueDownloadUrl` (token checks + placeholder Drive logic).
+  - `functions/package.json` defines Node 18 runtime with `firebase-admin`, `firebase-functions`, and `googleapis` dependencies.
+  - `firebase.json` points Functions hosting to the `functions` directory.
+
+### To deploy
+
+1. Install dependencies (outside sandbox):
+   ```bash
+   npm install --prefix services/token-service/functions
+   ```
+2. Authenticate with Firebase and set project: `firebase login`, `firebase use <project-id>`.
+3. Provide service account credentials and Drive settings via Functions config, e.g.:
+   ```bash
+   firebase functions:config:set drive.client_email="..." drive.private_key="..."
+   ```
+4. Deploy callable function:
+   ```bash
+   firebase deploy --only functions:issueDownloadUrl
+   ```
+5. Store the deployed endpoint in app environment (`OURLIBRARY_TOKEN_ENDPOINT`).
+
+### After deployment
+- Replace placeholder `generateSignedUrl` with real Drive API integration (using the configured service account).
+- Ensure Firestore has `tokens/` and `archives/` documents matching the expected schema.
+- Update maintainer docs and CLI scripts (`manage-tokens.js`) once the function is live.
