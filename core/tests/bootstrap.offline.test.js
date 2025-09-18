@@ -195,3 +195,38 @@ test('resolveConfigPath exposes token persistence helpers', async (t) => {
     fs.rmSync(tempAppDir, { recursive: true, force: true });
   }
 });
+
+test('resolveDownloadInfo uses token client stub', async (t) => {
+  const tempAppDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
+  const original = tokenClient.requestSignedUrl;
+  try {
+    let stubCalled = false;
+    tokenClient.requestSignedUrl = async ({ token, fileId, version }) => {
+      stubCalled = true;
+      assert.strictEqual(token, 'TOKEN999');
+      assert.strictEqual(fileId, 'file-abc');
+      assert.strictEqual(version, '3.1.4');
+      return {
+        url: 'https://example.com/archive.db',
+        archive: { file_id: fileId, version }
+      };
+    };
+
+    const bootstrap = new Bootstrap();
+    bootstrap.appDir = tempAppDir;
+    bootstrap.config = {
+      database_path: './database/OurLibrary.db',
+      downloads_dir: './downloads',
+      cache_dir: './cache',
+      distribution_token: 'TOKEN999'
+    };
+
+    const info = await bootstrap.resolveDownloadInfo({ file_id: 'file-abc', version: '3.1.4' });
+    assert.strictEqual(info.url, 'https://example.com/archive.db');
+    assert.ok(info.archive);
+    assert.ok(stubCalled);
+  } finally {
+    tokenClient.requestSignedUrl = original;
+    fs.rmSync(tempAppDir, { recursive: true, force: true });
+  }
+});
