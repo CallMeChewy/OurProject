@@ -1,11 +1,93 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { pipeline } = require('stream/promises');
+const yauzl = require('yauzl');
 const axios = require('axios'); // For future token service calls
 const fileSystem = require('./modules/filesystem');
 const manifestUtils = require('./modules/manifest');
 const databaseUtils = require('./modules/database');
 const tokenClient = require('./modules/tokenClient');
+
+
+function shouldTreatAsZip(downloadInfo) {
+    const archive = downloadInfo.archive || {};
+    const url = downloadInfo.url || '';
+    const hintValues = [
+        archive.isZip,
+        archive.zip === true,
+        typeof archive.contentType === 'string' && archive.contentType.toLowerCase().includes('zip'),
+        typeof archive.mimeType === 'string' && archive.mimeType.toLowerCase().includes('zip'),
+        typeof archive.fileName === 'string' && /\.zip$/i.test(archive.fileName),
+        /\.zip(\?|$)/i.test(url)
+    ];
+    return hintValues.some(Boolean);
+}
+
+async function extractDatabaseFromZip({ zipPath, destinationPath, archive, log }) {
+    const preferredEntry = archive && typeof archive.innerPath === 'string' ? archive.innerPath.replace(/^\/+/, '') : null;
+
+    return new Promise((resolve, reject) => {
+        yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
+            if (err) return reject(err);
+            let settled = false;
+            let matched = false;
+
+            const done = (error) => {
+                if (settled) return;
+                settled = true;
+                try {
+                    zipfile.close();
+                } catch (closeErr) {
+                    if (!error && closeErr) {
+                        error = closeErr;
+                    }
+                }
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(destinationPath);
+                }
+            };
+
+            zipfile.on('entry', (entry) => {
+                const rawName = entry.fileName.replace(/\\/g, '/').replace(/^\/+/, '');
+                const isDirectory = /\/$/.test(rawName);
+                if (isDirectory) {
+                    zipfile.readEntry();
+                    return;
+                }
+
+                const matchesPreferred = preferredEntry ? rawName === preferredEntry : /\.db$/i.test(rawName);
+                if (!matchesPreferred) {
+                    zipfile.readEntry();
+                    return;
+                }
+
+                matched = true;
+                zipfile.openReadStream(entry, (streamErr, readStream) => {
+                    if (streamErr) {
+                        done(streamErr);
+                        return;
+                    }
+                    const writeStream = fs.createWriteStream(destinationPath);
+                    pipeline(readStream, writeStream)
+                        .then(() => done())
+                        .catch(done);
+                });
+            });
+
+            zipfile.on('end', () => {
+                if (!matched) {
+                    done(new Error('Database file not found in archive'));
+                }
+            });
+
+            zipfile.on('error', done);
+            zipfile.readEntry();
+        });
+    });
+}
 
 class Bootstrap {
     constructor(options = {}) {
@@ -285,6 +367,9 @@ class Bootstrap {
         // downloadInfo.url may be a direct link or a short-lived Drive URL from the token service.
         // The caller (resolveDownloadInfo) already handled token validation and link issuance.
 
+        const isZipArchive = shouldTreatAsZip(downloadInfo);
+        let extractedPath = null;
+
         try {
             const response = await axios({
                 method: 'get',
@@ -336,12 +421,22 @@ class Bootstrap {
                 this.log('Downloaded database archive. SHA-256 verification skipped (no hash provided).');
             }
 
-            // TODO: Extract the database from the zip archive
-            // For now, assuming the download_url points directly to the .db file
-            // This will need to be updated to handle zip extraction.
+            let sourcePath = tempPath;
+            if (isZipArchive) {
+                extractedPath = path.join(path.dirname(tempPath), `ourlibrary_extracted_${Date.now()}.db`);
+                await extractDatabaseFromZip({ zipPath: tempPath, destinationPath: extractedPath, archive: downloadInfo.archive, log: this.log.bind(this) });
+                sourcePath = extractedPath;
+            }
+
             await this.createBackup(dbPath);
-            fs.copyFileSync(tempPath, dbPath); // Assuming tempPath is the .db file for now
-            fs.unlinkSync(tempPath);
+            fs.copyFileSync(sourcePath, dbPath);
+
+            if (fs.existsSync(tempPath)) {
+                fs.unlinkSync(tempPath);
+            }
+            if (extractedPath && fs.existsSync(extractedPath)) {
+                fs.unlinkSync(extractedPath);
+            }
 
             this.log('Database updated successfully');
             return true;
@@ -349,6 +444,13 @@ class Bootstrap {
             this.log(`Database download failed: ${error.message}`);
             if (fs.existsSync(tempPath)) {
                 fs.unlinkSync(tempPath);
+            }
+            if (extractedPath && fs.existsSync(extractedPath)) {
+                try {
+                    fs.unlinkSync(extractedPath);
+                } catch (cleanupError) {
+                    this.log(`Failed to remove extracted database after error: ${cleanupError.message}`);
+                }
             }
             throw error;
         }

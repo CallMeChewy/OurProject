@@ -10,6 +10,8 @@ const axiosModulePath = require.resolve('axios');
 const originalAxios = require(axiosModulePath);
 const tokenClientPath = require.resolve('../modules/tokenClient');
 const originalTokenClient = require(tokenClientPath);
+const ZIP_ARCHIVE_BASE64 = 'UEsDBBQAAAAIAFkxMlvY6ArsEAAAAA4AAAANAAAAT3VyTGlicmFyeS5kYktLzE7VLS7MySxJ1U1JAgBQSwECFAMUAAAACABZMTJb2OgK7BAAAAAOAAAADQAAAAAAAAAAAAAAgAEAAAAAT3VyTGlicmFyeS5kYlBLBQYAAAAAAQABADsAAAA7AAAAAAA=';
+
 const databaseUtils = require('../modules/database');
 
 const originalTempDownloadPath = databaseUtils.tempDownloadPath;
@@ -88,6 +90,68 @@ test('downloadDatabase streams signed URL into local file', async (t) => {
 });
 
 
+
+
+test('downloadDatabase extracts db from zip archive', async (t) => {
+  const tempAppDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
+
+  const zipBuffer = Buffer.from(ZIP_ARCHIVE_BASE64, 'base64');
+  const expectedHash = crypto.createHash('sha256').update(zipBuffer).digest('hex');
+
+  const axiosStub = async (options) => {
+    const stream = new PassThrough();
+    stream.end(zipBuffer);
+    return {
+      status: 200,
+      data: stream,
+      headers: { 'content-length': String(zipBuffer.length) },
+    };
+  };
+
+  try {
+    require.cache[axiosModulePath].exports = axiosStub;
+    require.cache[tokenClientPath].exports = {
+      requestSignedUrl: async () => ({
+        url: 'https://signed.example/download.zip',
+        archive: {
+          file_id: 'file-zip',
+          version: '7.8.9',
+          sha256: expectedHash,
+          contentType: 'application/zip',
+        },
+      }),
+    };
+    delete require.cache[require.resolve('../bootstrap')];
+    const Bootstrap = require('../bootstrap');
+    databaseUtils.tempDownloadPath = () => path.join(tempAppDir, 'download-temp.zip');
+
+    const bootstrap = new Bootstrap();
+    bootstrap.appDir = tempAppDir;
+    bootstrap.config = {
+      database_path: './database/OurLibrary.db',
+      downloads_dir: './downloads',
+      cache_dir: './cache',
+      distribution_token: 'TOK123'
+    };
+
+    fs.mkdirSync(path.join(tempAppDir, 'database'), { recursive: true });
+    fs.mkdirSync(path.join(tempAppDir, 'downloads'), { recursive: true });
+    fs.mkdirSync(path.join(tempAppDir, 'cache'), { recursive: true });
+
+    const info = await bootstrap.resolveDownloadInfo({ file_id: 'file-zip', version: '7.8.9', download_url: 'https://signed.example/download.zip' });
+    await bootstrap.downloadDatabase(info);
+
+    const dbPath = bootstrap.getDatabasePath();
+    const dbContent = fs.readFileSync(dbPath);
+    assert.strictEqual(dbContent.toString(), 'fake-sqlite-db');
+  } finally {
+    databaseUtils.tempDownloadPath = originalTempDownloadPath;
+    require.cache[axiosModulePath].exports = originalAxios;
+    require.cache[tokenClientPath].exports = originalTokenClient;
+    delete require.cache[require.resolve('../bootstrap')];
+    fs.rmSync(tempAppDir, { recursive: true, force: true });
+  }
+});
 test('downloadDatabase rejects when SHA-256 does not match', async (t) => {
   const tempAppDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ourlibrary-appdir-'));
 
