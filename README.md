@@ -64,6 +64,7 @@ The Firebase Cloud Functions under `services/token-service/functions` now genera
 - For the admin CLI (`services/token-service/tokenManager.js`) export `FIREBASE_SERVICE_ACCOUNT_PATH=/absolute/path/to/serviceAccount.json` before creating or revoking tokens.
 - The desktop bootstrapper resolves download URLs via the HTTP function. Point it at your deployment with `OURLIBRARY_TOKEN_ENDPOINT=https://<region>-<project>.cloudfunctions.net/issueDownloadUrlHttp` (or set `OURLIBRARY_TOKEN_HTTP_ENDPOINT`).
 - Distribute end-user tokens through the app’s config UI or by pre-setting `OURLIBRARY_TOKEN` in the environment. Tokens are cached for five minutes by default; pass `forceRefresh: true` when calling `TokenService` if you need to bust the cache after revocations.
+- See `docs/DEPLOY_TOKEN_SERVICE.md` for the full deployment sequence (functions deploy, Firestore seeding, staging verification).
 
 These settings keep Drive credentials out of the client while allowing both the callable and HTTP flows to reuse the same implementation.
 
