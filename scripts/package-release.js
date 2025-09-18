@@ -88,7 +88,7 @@ async function updateManifest({ manifestPath, version, minVersion, archiveInfo, 
 
   const previousArchive = manifest.database_archive || {};
   manifest.database_archive = {
-    file_id: previousArchive.file_id ?? null,
+    file_id: archiveInfo.fileId ?? previousArchive.file_id ?? null,
     download_url: null,
     sha256: archiveInfo.sha256,
     size_bytes: archiveInfo.sizeBytes,
@@ -126,6 +126,7 @@ async function packageRelease(rawOptions) {
   const manifestPath = path.resolve(options.manifest || path.join(process.cwd(), 'config', 'manifest.local.json'));
   const assets = parseAssetSpecs(options.asset);
   const metadataPath = path.resolve(options.metadataOut || path.join(outputDir, 'release-metadata.json'));
+  const fileId = options.fileId ? String(options.fileId).trim() : null;
   const dryRun = Boolean(options.dryRun);
   const force = Boolean(options.force);
   const skipManifest = Boolean(options.skipManifest);
@@ -145,6 +146,7 @@ async function packageRelease(rawOptions) {
     assets,
     tier,
     releaseNotes: releaseNotes.trim(),
+    fileId,
   };
 
   if (dryRun) {
@@ -182,6 +184,7 @@ async function packageRelease(rawOptions) {
       sha256: result.sha256,
       sizeBytes: result.sizeBytes,
       tier,
+      fileId,
     },
     assets: assets.map((asset) => ({ source: asset.src, destination: asset.dest })),
     notes: result.releaseNotes,
@@ -200,6 +203,7 @@ async function packageRelease(rawOptions) {
         sha256: result.sha256,
         sizeBytes: result.sizeBytes,
         tier,
+        fileId,
       },
       releaseNotes: releaseNotes,
     });
@@ -247,6 +251,10 @@ async function main() {
       type: 'string',
       default: 'free',
       describe: 'Entitlement tier for this archive (e.g., free, premium)',
+    })
+    .option('file-id', {
+      type: 'string',
+      describe: 'Drive file ID to embed in release metadata and manifest',
     })
     .option('asset', {
       type: 'array',

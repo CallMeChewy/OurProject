@@ -29,6 +29,8 @@ test('packageRelease packages database and updates manifest', async () => {
 
   const outputDir = path.join(workDir, 'dist');
 
+  const fileId = 'drive-file-123';
+
   const result = await packageRelease({
     database: dbPath,
     version: '1.2.3',
@@ -37,6 +39,7 @@ test('packageRelease packages database and updates manifest', async () => {
     notes: 'Automated test release',
     tier: 'free',
     metadataOut: path.join(outputDir, 'metadata.json'),
+    fileId,
   });
 
   assert.ok(fs.existsSync(result.zipPath), 'zip archive should exist');
@@ -47,12 +50,14 @@ test('packageRelease packages database and updates manifest', async () => {
   const metadata = JSON.parse(fs.readFileSync(result.metadataPath, 'utf8'));
   assert.strictEqual(metadata.version, '1.2.3');
   assert.strictEqual(metadata.archive.innerPath, 'OurLibrary.db');
+  assert.strictEqual(metadata.archive.fileId, fileId);
   assert.strictEqual(metadata.notes, 'Automated test release');
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   assert.strictEqual(manifest.latest_version, '1.2.3');
   assert.strictEqual(manifest.database_archive.sha256, result.sha256);
   assert.strictEqual(manifest.database_archive.inner_path, 'OurLibrary.db');
+  assert.strictEqual(manifest.database_archive.file_id, fileId);
 
   fs.rmSync(workDir, { recursive: true, force: true });
 });

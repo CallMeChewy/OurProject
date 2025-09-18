@@ -5,7 +5,7 @@ This package collects command-line tooling that supports release engineering and
 ## Available Commands
 
 - `npm run package-release --workspace scripts`
-  - Zips the SQLite snapshot (and optional assets), computes SHA-256, writes release metadata, and updates the manifest. Uploading to Drive and Firestore registration remain manual steps noted in the CLI output.
+  - Zips the SQLite snapshot (and optional assets), computes SHA-256, writes release metadata, and updates the manifest. Provide `--file-id <driveId>` once the archive is uploaded so the manifest/metadata include the Drive reference. Uploading to Drive and Firestore registration remain manual steps noted in the CLI output.
 - `npm run manage-tokens --workspace scripts`
   - Creates, revokes, and audits distribution tokens stored in Firestore.
 
