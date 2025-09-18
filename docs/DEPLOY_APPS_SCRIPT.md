@@ -9,10 +9,18 @@
 5.  For "Execute as," select **Me**.
 6.  For "Who has access," select **Anyone**.
 7.  Click **Deploy**.
-8.  Copy the **Web app URL**. This is your `couponApiUrl`. You will need to update this in `main.js`.
+8.  Copy the **Web app URL**. Store it in your deployment configuration (e.g., `config/ourlibrary_secret.json`) for any clients that still call the coupon API.
 9.  Click **Done**.
 
-## 2. Setting up the Daily Trigger
+## 2. Setting up Script Properties
+
+1. In the Apps Script editor, open **Project Settings** (gear icon).
+2. Under **Script properties**, click **Add script property** twice and create:
+   * Key: `SPREADSHEET_ID` → Value: the ID of your Google Sheet.
+   * Key: `SECRET_KEY` → Value: the shared secret that clients must present.
+3. Save the changes.
+
+## 3. Setting up the Daily Trigger
 
 1.  In your Google Apps Script project, on the left, click **Triggers**.
 2.  At the bottom right, click **Add Trigger**.
@@ -24,12 +32,9 @@
     *   **Select time of day**: `Midnight to 1am` (or any other time you prefer)
 4.  Click **Save**.
 
-## 3. Updating the Configuration
+## 4. Updating the Local Configuration
 
-1.  **`services/apps-script/Code.gs`**: 
-    *   Replace `YOUR_SPREADSHEET_ID` with the ID of your Google Sheet.
-    *   Replace `YOUR_SECRET_KEY` with the same secret key you used in `ourlibrary_secret.json`.
+1.  **Script Properties**: `SPREADSHEET_ID` and `SECRET_KEY` must match the IDs/secret used by your deployment. Rotate the secret if exposure is suspected.
 2.  **`config/ourlibrary_secret.json`** (copied from `config/templates/ourlibrary_secret.example.json`):
-    *   Replace `GENERATE_A_RANDOM_64_CHAR_SECRET` with a strong, randomly generated secret key.
-3.  **`app/main.js`**:
-    *   Replace `https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec` with the Web app URL you copied after deploying the script.
+    *   Replace `GENERATE_A_RANDOM_64_CHAR_SECRET` with the same secret used for the Apps Script property.
+3.  Update any client configuration (desktop beta builds, integration tests, etc.) that still call the coupon API so they use the new Web App URL and secret. The modern Firebase token service does not require this step.
