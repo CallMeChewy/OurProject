@@ -52,7 +52,7 @@ Populate each file with environment-specific values from your secrets manager. A
 The `scripts/` package contains placeholder CLIs for packaging releases and managing distribution tokens. Extend these Node scripts to integrate with Firebase and Google Drive once credentials are provisioned.
 
 ```bash
-npm run package-release   # TODO: implement release automation
+npm run package-release   # CLI entry point for packaging releases once scripts are filled in
 npm run manage-tokens     # Token service CLI (configure firebase-admin credentials)
 ```
 
