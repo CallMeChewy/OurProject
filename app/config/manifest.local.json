@@ -1,0 +1,14 @@
+{
+  "latest_version": "2.0.0",
+  "minimum_required_version": "1.0.0",
+  "release_date": "2025-10-01T17:00:00Z",
+  "database_archive": {
+    "fileId": "demo-offline-database-id",
+    "version": "2.0.0",
+    "size": 1048576,
+    "checksum": "demo-sha256-checksum",
+    "contentType": "application/x-sqlite3",
+    "fileName": "OurLibrary.db"
+  },
+  "release_notes": "Demonstration manifest for offline testing of the bootstrap system."
+}

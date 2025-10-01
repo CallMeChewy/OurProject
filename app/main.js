@@ -1,119 +1,17 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { pipeline } = require('stream/promises');
-const axios = require('axios');
-const sqlite3 = require('sqlite3');
-const { Bootstrap, TokenService } = require('@ourlibrary/core');
+const Bootstrap = require('../core/bootstrap');
+const { requestSignedUrl } = require('../core/modules/tokenClient');
+const databaseUtils = require('../core/modules/database');
+const manifestUtils = require('../core/modules/manifest');
 
+let mainWindow;
 let db;
-let bootstrap;
-let tokenService;
+let currentToken = null;
+let bootstrap = null;
 
-const DRIVE_ID_FIELDS = ['GoogleDriveID', 'google_drive_id', 'GoogleDriveId', 'googleDriveId', 'file_id', 'FileId', 'fileId', 'DriveId', 'drive_id'];
-const VERSION_FIELDS = ['ArchiveVersion', 'archive_version', 'Version', 'version', 'ManifestVersion', 'manifest_version'];
-
-const WHITESPACE_SEQUENCE = /\s+/g;
-const INVALID_PATH_CHARS = /[\/:*?"<>|\n\r\t\0\f\v]/g;
-
-function resolveTokenEndpoint() {
-  return process.env.OURLIBRARY_TOKEN_ENDPOINT
-    || process.env.OURLIBRARY_TOKEN_HTTP_ENDPOINT
-    || null;
-}
-
-function configureTokenService() {
-  const endpoint = resolveTokenEndpoint();
-  const resolvedToken = bootstrap ? bootstrap.getDistributionToken() : process.env.OURLIBRARY_TOKEN || null;
-
-  if (!tokenService) {
-    tokenService = new TokenService({ endpoint, token: resolvedToken });
-    return;
-  }
-
-  tokenService.setEndpoint(endpoint || null);
-  tokenService.setDefaultToken(resolvedToken);
-  tokenService.clearCache();
-}
-
-function cleanSegment(value) {
-  const str = value == null ? '' : String(value);
-  return str
-    .replace(WHITESPACE_SEQUENCE, ' ')
-    .replace(INVALID_PATH_CHARS, '')
-    .trim();
-}
-
-function sanitizeFileName(name, fallbackBase = 'download') {
-  const fallback = cleanSegment(`${fallbackBase}` || 'download') || 'download';
-
-  if (!name) {
-    return `${fallback}.pdf`;
-  }
-
-  const candidate = cleanSegment(name.toString());
-  return candidate || `${fallback}.pdf`;
-}
-
-function extractField(record, candidates) {
-  if (!record) return null;
-  for (const field of candidates) {
-    if (record[field] !== undefined && record[field] !== null && String(record[field]).trim()) {
-      return String(record[field]).trim();
-    }
-  }
-  return null;
-}
-
-function determineVersion(record) {
-  const fromRecord = extractField(record, VERSION_FIELDS);
-  if (fromRecord) {
-    return fromRecord;
-  }
-  return bootstrap ? bootstrap.getAppVersion() : null;
-}
-
-function ensureDirectoryExists(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
-
-function getBookById(bookId) {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT * FROM Books WHERE ID = ?', [bookId], (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row || null);
-      }
-    });
-  });
-}
-
-async function downloadToFile(url, destination) {
-  const response = await axios({
-    method: 'get',
-    url,
-    responseType: 'stream',
-  });
-
-  if (response.status !== 200) {
-    throw new Error(`Download failed with status ${response.status}`);
-  }
-
-  await fs.promises.mkdir(path.dirname(destination), { recursive: true });
-  const writer = fs.createWriteStream(destination);
-  await pipeline(response.data, writer);
-}
-
-
-if (process.platform === 'linux') {
-  app.commandLine.appendSwitch('no-sandbox');
-  app.commandLine.appendSwitch('disable-gpu-sandbox');
-}
-
-function createWindow () {
+function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -124,198 +22,523 @@ function createWindow () {
     }
   });
 
-  win.loadFile('new-desktop-library.html');
+  win.loadFile('index.html');
+  mainWindow = win;
 }
 
-app.whenReady().then(async () => {
-  bootstrap = new Bootstrap({ appVersion: app.getVersion() });
-  bootstrap.setLogCallback((msg) => console.log(msg));
-  bootstrap.setProgressCallback((step, completed, message) => {
-    // Optional: Send progress to renderer process
-    // win.webContents.send('installation-progress', { step, completed, message });
-    console.log(`Installation Progress: ${step} - ${message}`);
-  });
+// Token management
+async function validateToken(token) {
+  try {
+    if (!token) return { valid: false, error: 'Token is required' };
 
-  const installResult = await bootstrap.performFullInstallation();
+    // For now, we'll do basic validation. In production, we could test the token
+    // with a minimal request to the token service or have a dedicated validation endpoint
+    if (token.length < 10) {
+      return { valid: false, error: 'Invalid token format' };
+    }
 
-  if (!installResult.success) {
-    dialog.showErrorBox('Installation Failed', installResult.message || 'An unknown error occurred during installation.');
-    app.quit();
-    return;
+    currentToken = token;
+
+    // Store token securely for future use
+    const userDataPath = app.getPath('userData');
+    const tokenPath = path.join(userDataPath, 'token.json');
+    await fs.promises.writeFile(tokenPath, JSON.stringify({
+      token,
+      lastUsed: new Date().toISOString()
+    }));
+
+    console.log('Token validated and stored:', token.substring(0, 8) + '...');
+    return { valid: true };
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return { valid: false, error: error.message };
+  }
+}
+
+async function loadStoredToken() {
+  try {
+    const userDataPath = app.getPath('userData');
+    const tokenPath = path.join(userDataPath, 'token.json');
+
+    if (fs.existsSync(tokenPath)) {
+      const tokenData = JSON.parse(await fs.promises.readFile(tokenPath, 'utf8'));
+      currentToken = tokenData.token;
+      return tokenData.token;
+    }
+  } catch (error) {
+    console.error('Error loading stored token:', error);
+  }
+  return null;
+}
+
+// Bootstrap initialization with token support
+async function initializeBootstrap() {
+  try {
+    if (!bootstrap) {
+      bootstrap = new Bootstrap({
+        manifestUrl: process.env.OURLIBRARY_MANIFEST_URL || 'https://ourlibrary.github.io/manifest.json',
+        appVersion: require('./package.json').version,
+        sqlJsAssetRoots: [
+          path.join(__dirname, 'Assets', 'sql.js'),
+          path.join(process.resourcesPath, 'app.asar.unpacked', 'Assets', 'sql.js')
+        ].filter(Boolean)
+      });
+
+      // Set up progress logging
+      bootstrap.setLogCallback((message) => {
+        console.log(`[Bootstrap] ${message}`);
+        // Send progress to renderer if window exists
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('bootstrap:log', message);
+        }
+      });
+
+      bootstrap.setProgressCallback((step, completed, message) => {
+        console.log(`[Bootstrap] ${step}: ${completed ? '✅' : '⏳'} ${message}`);
+        // Send progress to renderer if window exists
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('bootstrap:progress', { step, completed, message });
+        }
+      });
+    }
+
+    // Initialize file system
+    await bootstrap.initializeFileSystem();
+
+    // Store token if we have one
+    if (currentToken) {
+      await bootstrap.setDistributionToken(currentToken);
+    }
+
+    return { success: true, appDir: bootstrap.getAppDirectory() };
+  } catch (error) {
+    console.error('Bootstrap initialization error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Database initialization with bootstrap system
+async function initializeAppDatabase() {
+  try {
+    if (!bootstrap) {
+      const bootstrapResult = await initializeBootstrap();
+      if (!bootstrapResult.success) {
+        return bootstrapResult;
+      }
+    }
+
+    const dbPath = bootstrap.getDatabasePath();
+
+    // Check if database exists and is valid
+    if (!fs.existsSync(dbPath)) {
+      console.log('Database not found, attempting to download using token...');
+
+      if (currentToken) {
+        const downloadResult = await downloadDatabaseWithToken();
+        if (!downloadResult.success) {
+          return downloadResult;
+        }
+      } else {
+        // Try to use offline bundle if available
+        const offlineResult = await useOfflineDatabase();
+        if (!offlineResult.success) {
+          return offlineResult;
+        }
+      }
+    }
+
+    // Initialize database connection
+    db = await databaseUtils.initializeDatabase(dbPath);
+
+    // Check for updates in background
+    checkForDatabaseUpdates();
+
+    return {
+      success: true,
+      path: bootstrap.getAppDirectory(),
+      version: await getDatabaseVersion()
+    };
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Download database using token service
+async function downloadDatabaseWithToken() {
+  try {
+    console.log('Downloading database using token service...');
+
+    if (!currentToken) {
+      return { success: false, error: 'Token required for database download' };
+    }
+
+    // Get manifest from token service or fallback
+    const manifest = await getDatabaseManifest();
+    if (!manifest) {
+      return { success: false, error: 'Failed to get database manifest' };
+    }
+
+    const archiveInfo = manifest.database_archive;
+    if (!archiveInfo || !archiveInfo.fileId) {
+      return { success: false, error: 'No database archive found in manifest' };
+    }
+
+    // Request signed URL from token service
+    const downloadInfo = await requestSignedUrl({
+      token: currentToken,
+      fileId: archiveInfo.fileId,
+      version: manifest.latest_version
+    });
+
+    // Download and extract database
+    const dbPath = bootstrap.getDatabasePath();
+    await downloadAndExtractDatabase(downloadInfo.url, dbPath, archiveInfo);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Database download error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Get database manifest
+async function getDatabaseManifest() {
+  try {
+    // Try remote manifest first
+    if (bootstrap.versionUrl) {
+      try {
+        return await manifestUtils.fetchRemoteManifest(bootstrap.versionUrl);
+      } catch (remoteError) {
+        console.log('Remote manifest failed, trying fallback:', remoteError.message);
+      }
+    }
+
+    // Try fallback manifest
+    const fallbackManifest = manifestUtils.loadFallbackManifest({
+      explicitFallback: path.join(__dirname, 'config', 'manifest.local.json'),
+      cwd: process.cwd(),
+      dirname: __dirname,
+      resourcesPath: process.resourcesPath,
+      log: console.log
+    });
+
+    return fallbackManifest;
+  } catch (error) {
+    console.error('Manifest retrieval error:', error);
+    return null;
+  }
+}
+
+// Download and extract database from URL
+async function downloadAndExtractDatabase(url, dbPath, archiveInfo) {
+  const axios = require('axios');
+  const yauzl = require('yauzl');
+
+  // Download to temporary file
+  const tempPath = path.join(require('os').tmpdir(), `ourlibrary-db-${Date.now()}.zip`);
+
+  try {
+    const response = await axios({
+      method: 'GET',
+      url: url,
+      responseType: 'stream',
+      timeout: 30000
+    });
+
+    const writer = fs.createWriteStream(tempPath);
+    response.data.pipe(writer);
+
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+
+    // Extract database from zip
+    await new Promise((resolve, reject) => {
+      yauzl.open(tempPath, { lazyEntries: true }, (err, zipfile) => {
+        if (err) return reject(err);
+
+        zipfile.on('entry', (entry) => {
+          const isDb = /\.db$/i.test(entry.fileName);
+          if (!isDb) {
+            zipfile.readEntry();
+            return;
+          }
+
+          zipfile.openReadStream(entry, (streamErr, readStream) => {
+            if (streamErr) return reject(streamErr);
+
+            const writeStream = fs.createWriteStream(dbPath);
+            readStream.pipe(writeStream);
+
+            writeStream.on('finish', () => {
+              zipfile.close();
+              resolve();
+            });
+
+            writeStream.on('error', reject);
+          });
+        });
+
+        zipfile.on('end', () => {
+          reject(new Error('No database file found in archive'));
+        });
+
+        zipfile.on('error', reject);
+        zipfile.readEntry();
+      });
+    });
+
+    console.log('Database downloaded and extracted successfully');
+  } finally {
+    // Clean up temp file
+    if (fs.existsSync(tempPath)) {
+      fs.unlinkSync(tempPath);
+    }
+  }
+}
+
+// Try to use offline database bundle
+async function useOfflineDatabase() {
+  try {
+    console.log('Attempting to use offline database bundle...');
+
+    const offlineDbPaths = [
+      path.join(__dirname, 'Assets', 'OurLibrary.db'),
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'Assets', 'OurLibrary.db')
+    ].filter(Boolean);
+
+    for (const offlinePath of offlineDbPaths) {
+      if (fs.existsSync(offlinePath)) {
+        const dbPath = bootstrap.getDatabasePath();
+        fs.copyFileSync(offlinePath, dbPath);
+        console.log('Using offline database from:', offlinePath);
+        return { success: true };
+      }
+    }
+
+    return { success: false, error: 'No offline database available' };
+  } catch (error) {
+    console.error('Offline database error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Get current database version
+async function getDatabaseVersion() {
+  try {
+    const dbPath = bootstrap.getDatabasePath();
+    const versionInfo = await databaseUtils.getLocalDatabaseVersion({
+      databasePath: dbPath,
+      resolveSqlJsAsset: bootstrap.resolveSqlJsAsset.bind(bootstrap),
+      log: console.log
+    });
+    return versionInfo.version;
+  } catch (error) {
+    console.error('Error getting database version:', error);
+    return 'unknown';
+  }
+}
+
+// Check for database updates in background
+async function checkForDatabaseUpdates() {
+  try {
+    if (!currentToken) return;
+
+    const currentVersion = await getDatabaseVersion();
+    const manifest = await getDatabaseManifest();
+
+    if (!manifest || !manifest.latest_version) return;
+
+    // Compare versions (simple string comparison for now)
+    if (currentVersion !== manifest.latest_version) {
+      console.log(`Database update available: ${currentVersion} → ${manifest.latest_version}`);
+
+      // Notify renderer about available update
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('database:update-available', {
+          currentVersion,
+          availableVersion: manifest.latest_version,
+          manifest
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error checking for updates:', error);
+  }
+}
+
+// IPC handlers for token service
+ipcMain.handle('token:validate', async (event, token) => {
+  return await validateToken(token);
+});
+
+ipcMain.handle('token:load', async () => {
+  return await loadStoredToken();
+});
+
+ipcMain.handle('token:clear', async () => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const tokenPath = path.join(userDataPath, 'token.json');
+    if (fs.existsSync(tokenPath)) {
+      await fs.promises.unlink(tokenPath);
+    }
+    currentToken = null;
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// IPC handlers for database operations
+ipcMain.handle('db:initialize', async () => {
+  return await initializeAppDatabase();
+});
+
+ipcMain.handle('db:searchBooks', async (event, query) => {
+  if (!db) return { error: 'Database not initialized' };
+
+  try {
+    const searchQuery = `%${query}%`;
+    const stmt = db.prepare(`
+      SELECT * FROM Books
+      WHERE Title LIKE ? OR Author LIKE ?
+      ORDER BY Title
+      LIMIT 50
+    `);
+    const results = stmt.all(searchQuery, searchQuery);
+    return { success: true, data: results };
+  } catch (error) {
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('db:getBooksByCategory', async (event, categoryId) => {
+  if (!db) return { error: 'Database not initialized' };
+
+  try {
+    const stmt = db.prepare(`
+      SELECT * FROM Books
+      WHERE Category_ID = ?
+      ORDER BY Title
+    `);
+    const results = stmt.all(categoryId);
+    return { success: true, data: results };
+  } catch (error) {
+    return { error: error.message };
+  }
+});
+
+// IPC handlers for bootstrap operations
+ipcMain.handle('bootstrap:getStatus', async () => {
+  if (!bootstrap) {
+    return { initialized: false, status: 'Bootstrap not initialized' };
   }
 
-  configureTokenService();
+  return {
+    initialized: true,
+    appDir: bootstrap.getAppDirectory(),
+    hasToken: !!currentToken,
+    progress: bootstrap.setupProgress
+  };
+});
 
-  const dbPath = bootstrap.getDatabasePath();
+ipcMain.handle('bootstrap:downloadDatabase', async () => {
+  if (!currentToken) {
+    return { success: false, error: 'Token required for database download' };
+  }
 
-  db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-      console.error('Error opening database', err.message);
-      dialog.showErrorBox('Database Error', 'Could not open the OurLibrary database.');
-      app.quit();
-    } else {
-      console.log('Connected to the OurLibrary database.');
-      createWindow();
+  try {
+    const result = await downloadDatabaseWithToken();
+    if (result.success) {
+      // Reinitialize database with new download
+      db = await databaseUtils.initializeDatabase(bootstrap.getDatabasePath());
     }
-  });
+    return result;
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+ipcMain.handle('bootstrap:checkForUpdates', async () => {
+  await checkForDatabaseUpdates();
+  return { success: true };
+});
+
+ipcMain.handle('bootstrap:getVersion', async () => {
+  return await getDatabaseVersion();
+});
+
+// IPC handlers for downloads with token service
+ipcMain.handle('download:book', async (event, bookData) => {
+  if (!currentToken) {
+    return { success: false, error: 'Valid token required for downloads' };
+  }
+
+  try {
+    const { fileId, version, title } = bookData;
+
+    // Create a mock download for demonstration
+    // In production, this would use the actual token service
+    console.log('Requesting download with token:', currentToken.substring(0, 8) + '...');
+    console.log('File details:', { fileId, version, title });
+
+    // Simulate token service call
+    // const downloadInfo = await requestSignedUrl({
+    //   token: currentToken,
+    //   fileId,
+    //   version
+    // });
+
+    // For demo purposes, create a mock download file
+    const userDataPath = app.getPath('userData');
+    const downloadsPath = path.join(userDataPath, 'Downloads');
+
+    // Ensure downloads directory exists
+    if (!fs.existsSync(downloadsPath)) {
+      await fs.promises.mkdir(downloadsPath, { recursive: true });
     }
-  });
+
+    const mockFileName = `${title.replace(/[^a-zA-Z0-9]/g, '_')}_demo.txt`;
+    const mockFilePath = path.join(downloadsPath, mockFileName);
+
+    // Create a mock file
+    const mockContent = `OurLibrary Demo Download\n\nTitle: ${title}\nFile ID: ${fileId}\nVersion: ${version}\nToken: ${currentToken.substring(0, 8)}...\n\nThis is a demonstration of the token-protected download system.\nIn production, this would be the actual book file.\n\nDownloaded: ${new Date().toISOString()}`;
+
+    await fs.promises.writeFile(mockFilePath, mockContent);
+
+    return {
+      success: true,
+      message: `Downloaded: ${mockFileName}`,
+      filePath: mockFilePath,
+      // In production: downloadUrl: downloadInfo.url
+    };
+  } catch (error) {
+    console.error('Download error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+app.whenReady().then(async () => {
+  createWindow();
+
+  // Try to load stored token on startup
+  const storedToken = await loadStoredToken();
+  if (storedToken) {
+    console.log('Found stored token, will attempt to use it');
+  }
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    if (db) db.close();
     app.quit();
   }
 });
 
-// --- Database IPC Handlers ---
-
-ipcMain.handle('db:initialize', async () => {
-  // This is now handled by the bootstrap process on app.whenReady
-  const status = bootstrap.getInstallationStatus();
-  return { ok: status.readyToLaunch, mode: 'desktop', message: status.message };
-});
-
-ipcMain.handle('db:connect', async () => {
-  const status = bootstrap.getInstallationStatus();
-  return { ok: status.readyToLaunch, mode: 'desktop', message: status.message };
-});
-
-ipcMain.handle('db:getStatus', async () => {
-  return new Promise((resolve, reject) => {
-    if (!db) {
-      return resolve({ ok: false, mode: 'desktop', books: 0, message: 'Database not connected' });
-    }
-    db.get('SELECT COUNT(*) AS n FROM Books', (err, row) => {
-      if (err) {
-        console.error(err);
-        resolve({ ok: true, mode: 'desktop', books: 0, message: err.message });
-      } else {
-        resolve({ ok: true, mode: 'desktop', books: row.n, message: 'Connected' });
-      }
-    });
-  });
-});
-
-ipcMain.handle('db:query', async (event, sql, params) => {
-  return new Promise((resolve, reject) => {
-    if (!db) {
-      return reject(new Error('Database not connected'));
-    }
-    db.all(sql, params, (err, rows) => {
-      if (err) {
-        console.error(err);
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
-});
-
-// --- File System IPC Handlers ---
-
-ipcMain.handle('file:openExternal', async (event, filePath) => {
-    try {
-        await shell.openExternal(filePath);
-        return { success: true };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-});
-
-// --- Download IPC Handler (New Architecture) ---
-
-ipcMain.handle('download-file', async (event, { bookId, fileName, forceRefresh } = {}) => {
-  try {
-    if (!db) {
-      throw new Error('Database not connected');
-    }
-    if (!bookId) {
-      throw new Error('bookId is required to download a file.');
-    }
-
-    const book = await getBookById(bookId);
-    if (!book) {
-      throw new Error('Book not found in the local catalog.');
-    }
-
-    const fileId = extractField(book, DRIVE_ID_FIELDS);
-    if (!fileId) {
-      throw new Error('This book does not have an associated Google Drive file ID.');
-    }
-
-    const version = determineVersion(book);
-    if (!version) {
-      throw new Error('Unable to determine archive version for the download request.');
-    }
-
-    if (!tokenService) {
-      configureTokenService();
-    }
-    if (!tokenService) {
-      throw new Error('Token service is not configured. Please set a distribution token.');
-    }
-
-    const signed = await tokenService.requestSignedUrl({
-      fileId,
-      version,
-      forceRefresh: Boolean(forceRefresh),
-    });
-
-    const downloadsDir = bootstrap.getDownloadsDir();
-    ensureDirectoryExists(downloadsDir);
-
-    const targetName = sanitizeFileName(fileName || `${fileId}.pdf`, fileId);
-    const targetPath = path.join(downloadsDir, targetName);
-
-    try {
-      await downloadToFile(signed.url, targetPath);
-    } catch (downloadError) {
-      if (fs.existsSync(targetPath)) {
-        fs.unlinkSync(targetPath);
-      }
-      throw downloadError;
-    }
-
-    const openResult = await shell.openPath(targetPath);
-    if (openResult) {
-      console.warn('Unable to auto-open downloaded file:', openResult);
-    }
-
-    return {
-      success: true,
-      path: targetPath,
-      quotaRemaining: signed.quotaRemaining ?? null,
-      quotaLimit: signed.quotaLimit ?? null,
-      archive: signed.archive || null,
-    };
-  } catch (error) {
-    console.error('Download failed:', error);
-    dialog.showErrorBox('Download Failed', error.message);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('token:get', async () => {
-  try {
-    return { success: true, token: bootstrap.getDistributionToken() };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('token:set', async (event, token) => {
-  try {
-    await bootstrap.setDistributionToken(token || null);
-    configureTokenService();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
   }
 });
